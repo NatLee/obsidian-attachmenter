@@ -10,14 +10,19 @@
   opacity: 1;
 }
 
-/* Paste Image Modal Styles */
-.attachmenter-paste-modal .modal-content {
-  max-width: 500px;
+/* Paste Image Manager Modal Styles */
+.attachmenter-paste-manager-modal .modal-content {
+  max-width: 600px;
+  min-height: 500px;
 }
 
 .attachmenter-modal-header {
-  margin-bottom: 1.5em;
+  margin-bottom: 1em;
+}
+
+.attachmenter-title-row {
   text-align: center;
+  margin-bottom: 1em;
 }
 
 .attachmenter-modal-title {
@@ -109,4 +114,162 @@
 
 .attachmenter-modal-buttons button.mod-cta:hover {
   background-color: var(--interactive-accent-hover);
+}
+
+/* Navigation Tabs */
+.attachmenter-nav-container {
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 1.5em;
+}
+
+.attachmenter-nav-tabs {
+  display: flex;
+  gap: 0.5em;
+  padding: 0;
+}
+
+.attachmenter-nav-tab {
+  padding: 0.75em 1.5em;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.95em;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-bottom: -1px;
+}
+
+.attachmenter-nav-tab:hover {
+  color: var(--text-normal);
+  background: var(--background-secondary);
+}
+
+.attachmenter-nav-tab.active {
+  color: var(--text-accent);
+  border-bottom-color: var(--interactive-accent);
+  background: transparent;
+}
+
+/* Content Area */
+.attachmenter-content-area {
+  position: relative;
+  min-height: 400px;
+}
+
+.attachmenter-panel {
+  display: none;
+}
+
+.attachmenter-panel.active {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Path Panel */
+.attachmenter-description {
+  color: var(--text-muted);
+  margin-bottom: 1.5em;
+  font-size: 0.9em;
+}
+
+.attachmenter-suggested-paths {
+  margin: 1.5em 0;
+  padding: 1em;
+  background: var(--background-secondary);
+  border-radius: 8px;
+}
+
+.attachmenter-suggested-title {
+  margin: 0 0 0.75em 0;
+  font-weight: 600;
+  color: var(--text-normal);
+  font-size: 0.9em;
+}
+
+.attachmenter-suggested-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75em;
+  margin: 0.5em 0;
+  background: var(--background-primary);
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.attachmenter-suggested-item code {
+  flex: 1;
+  font-size: 0.85em;
+  color: var(--text-normal);
+  word-break: break-all;
+  margin-right: 1em;
+}
+
+.attachmenter-suggested-item button {
+  flex-shrink: 0;
+}
+
+/* Actions Panel */
+.attachmenter-action-item {
+  margin: 1.5em 0;
+  padding: 1em;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.attachmenter-action-info {
+  margin-bottom: 0.5em;
+}
+
+.attachmenter-action-info strong {
+  color: var(--text-normal);
+  font-size: 1em;
+}
+
+.attachmenter-action-desc {
+  margin-bottom: 1em;
+}
+
+.attachmenter-action-desc p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.attachmenter-action-item button {
+  width: 100%;
+  margin-top: 0.5em;
+}
+
+/* Footer */
+.attachmenter-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75em;
+  margin-top: 1.5em;
+  padding-top: 1em;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.attachmenter-modal-footer button {
+  min-width: 100px;
+  padding: 0.6em 1.2em;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }

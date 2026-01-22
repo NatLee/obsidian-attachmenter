@@ -1,0 +1,342 @@
+import {
+  App,
+  FileManager,
+  Modal,
+  Notice,
+  normalizePath,
+  Setting,
+  TFile,
+  TextFileView,
+  Vault,
+  Workspace,
+} from "obsidian";
+
+import type { AttachmenterSettings } from "../model/Settings";
+import { PathResolver } from "../path/PathResolver";
+
+// Simple path utilities for browser environment
+function join(...parts: string[]): string {
+  return parts
+    .filter((p) => p)
+    .join("/")
+    .replace(/\/+/g, "/");
+}
+
+export class PasteImageManagerModal extends Modal {
+  private currentPath: string;
+  private originalPath: string;
+  private pathResolver: PathResolver;
+
+  constructor(
+    app: App,
+    private vault: Vault,
+    private fileManager: FileManager,
+    private workspace: Workspace,
+    private file: TFile,
+    private linkTextOrPath: string,
+    private activeView: TextFileView,
+    private activeFile: TFile,
+    private folderPath: string,
+    private settings: AttachmenterSettings,
+    private onDelete: (folderPath: string) => Promise<void>,
+    private onRename: (newPath: string) => Promise<void>
+  ) {
+    super(app);
+    this.modalEl.addClass("attachmenter-paste-manager-modal");
+    this.pathResolver = new PathResolver(vault, settings);
+    this.originalPath = file.path;
+    this.currentPath = file.path;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+
+    // Header with navigation
+    const header = contentEl.createDiv({ cls: "attachmenter-modal-header" });
+    const titleRow = header.createDiv({ cls: "attachmenter-title-row" });
+    titleRow.createEl("h2", {
+      text: "Manage Pasted Image",
+      cls: "attachmenter-modal-title",
+    });
+
+    // Navigation tabs
+    const navContainer = header.createDiv({ cls: "attachmenter-nav-container" });
+    const navTabs = navContainer.createDiv({ cls: "attachmenter-nav-tabs" });
+
+    const previewTab = navTabs.createEl("button", {
+      text: "Preview",
+      cls: "attachmenter-nav-tab active",
+    });
+    const pathTab = navTabs.createEl("button", {
+      text: "Path",
+      cls: "attachmenter-nav-tab",
+    });
+    const actionsTab = navTabs.createEl("button", {
+      text: "Actions",
+      cls: "attachmenter-nav-tab",
+    });
+
+    // Content area
+    const contentArea = contentEl.createDiv({ cls: "attachmenter-content-area" });
+
+    // Preview panel
+    const previewPanel = contentArea.createDiv({
+      cls: "attachmenter-panel active",
+      attr: { "data-panel": "preview" },
+    });
+    this._renderPreviewPanel(previewPanel);
+
+    // Path panel
+    const pathPanel = contentArea.createDiv({
+      cls: "attachmenter-panel",
+      attr: { "data-panel": "path" },
+    });
+    this._renderPathPanel(pathPanel);
+
+    // Actions panel
+    const actionsPanel = contentArea.createDiv({
+      cls: "attachmenter-panel",
+      attr: { "data-panel": "actions" },
+    });
+    this._renderActionsPanel(actionsPanel);
+
+    // Tab switching
+    const tabs = [previewTab, pathTab, actionsTab];
+    const panels = [previewPanel, pathPanel, actionsPanel];
+
+    tabs.forEach((tab, index) => {
+      tab.onclick = () => {
+        tabs.forEach((t) => t.classList.remove("active"));
+        panels.forEach((p) => p.classList.remove("active"));
+        tab.classList.add("active");
+        panels[index].classList.add("active");
+      };
+    });
+
+    // Footer buttons
+    const footer = contentEl.createDiv({ cls: "attachmenter-modal-footer" });
+    const keepButton = footer.createEl("button", {
+      text: "Keep",
+      cls: "mod-cta",
+    });
+    keepButton.onclick = () => {
+      this.close();
+    };
+
+    // Set focus on Keep button by default
+    keepButton.focus();
+  }
+
+  private _renderPreviewPanel(container: HTMLElement) {
+    // Image preview
+    const previewContainer = container.createDiv({
+      cls: "attachmenter-modal-preview",
+    });
+
+    const img = previewContainer.createEl("img", {
+      attr: {
+        src: this.vault.getResourcePath(this.file),
+        alt: "Pasted image preview",
+      },
+      cls: "attachmenter-preview-image",
+    });
+
+    // Image info
+    const infoContainer = container.createDiv({
+      cls: "attachmenter-modal-info",
+    });
+
+    const fileName = infoContainer.createDiv({
+      cls: "attachmenter-file-name",
+    });
+    fileName.createEl("strong", { text: "File: " });
+    fileName.createEl("span", { text: this.file.name });
+
+    const filePath = infoContainer.createDiv({
+      cls: "attachmenter-file-path",
+    });
+    filePath.createEl("strong", { text: "Path: " });
+    filePath.createEl("span", { text: this.file.path });
+  }
+
+  private _renderPathPanel(container: HTMLElement) {
+    container.createEl("p", {
+      text: "Change the save location for this image:",
+      cls: "attachmenter-description",
+    });
+
+    // Current path display
+    const currentPathSetting = new Setting(container)
+      .setName("Current path")
+      .setDesc(this.currentPath)
+      .setDisabled(true);
+
+    // New path input
+    const newPathSetting = new Setting(container)
+      .setName("New path")
+      .setDesc("Enter the new path for this image")
+      .addText((text) => {
+        text.setValue(this.currentPath);
+        text.inputEl.onchange = () => {
+          this.currentPath = text.getValue();
+        };
+      });
+
+    // Suggested paths
+    const suggestedContainer = container.createDiv({
+      cls: "attachmenter-suggested-paths",
+    });
+    suggestedContainer.createEl("p", {
+      text: "Suggested paths:",
+      cls: "attachmenter-suggested-title",
+    });
+
+    // Get suggested path (current attachment folder)
+    const suggestedPath = this.pathResolver.getAttachmentFolderForNote(
+      this.activeFile
+    );
+    const suggestedFullPath = normalizePath(
+      join(suggestedPath, this.file.name)
+    );
+
+    const suggestedItem = suggestedContainer.createDiv({
+      cls: "attachmenter-suggested-item",
+    });
+    suggestedItem.createEl("code", { text: suggestedFullPath });
+    const useSuggestedBtn = suggestedItem.createEl("button", {
+      text: "Use",
+      cls: "mod-small",
+    });
+    useSuggestedBtn.onclick = () => {
+      newPathSetting.settingEl.querySelector("input")?.setValue(
+        suggestedFullPath
+      );
+      this.currentPath = suggestedFullPath;
+    };
+
+    // Apply button
+    const applyButton = container.createEl("button", {
+      text: "Apply Path Change",
+      cls: "mod-cta",
+    });
+    applyButton.onclick = async () => {
+      if (this.currentPath !== this.originalPath) {
+        try {
+          await this.onRename(this.currentPath);
+          this.originalPath = this.currentPath;
+          new Notice("Path updated successfully");
+          // Update display
+          currentPathSetting.setDesc(this.currentPath);
+        } catch (error) {
+          console.error("Error changing path:", error);
+          new Notice("Failed to change path");
+        }
+      }
+    };
+  }
+
+  private _renderActionsPanel(container: HTMLElement) {
+    container.createEl("p", {
+      text: "Available actions for this image:",
+      cls: "attachmenter-description",
+    });
+
+    // Delete button
+    const deleteContainer = container.createDiv({
+      cls: "attachmenter-action-item",
+    });
+    deleteContainer.createEl("div", {
+      cls: "attachmenter-action-info",
+    }).createEl("strong", { text: "Delete Image" });
+    deleteContainer
+      .createEl("div", {
+        cls: "attachmenter-action-desc",
+      })
+      .createEl("p", {
+        text: "Remove this image from your vault and the note",
+      });
+
+    const deleteButton = deleteContainer.createEl("button", {
+      text: "Delete",
+      cls: "mod-warning",
+    });
+    deleteButton.onclick = async () => {
+      const confirmed = await new Promise<boolean>((resolve) => {
+        // Simple confirmation
+        const confirmModal = new Modal(this.app);
+        confirmModal.titleEl.setText("Confirm Delete");
+        confirmModal.contentEl.createEl("p", {
+          text: "Are you sure you want to delete this image? This action cannot be undone.",
+        });
+        const buttonContainer = confirmModal.contentEl.createDiv({
+          cls: "modal-button-container",
+        });
+        const confirmBtn = buttonContainer.createEl("button", {
+          text: "Delete",
+          cls: "mod-warning",
+        });
+        const cancelBtn = buttonContainer.createEl("button", {
+          text: "Cancel",
+        });
+        confirmBtn.onclick = () => {
+          confirmModal.close();
+          resolve(true);
+        };
+        cancelBtn.onclick = () => {
+          confirmModal.close();
+          resolve(false);
+        };
+        confirmModal.open();
+      });
+
+      if (confirmed) {
+        try {
+          await this.onDelete(this.folderPath);
+          this.close();
+        } catch (error) {
+          console.error("Error deleting image:", error);
+          new Notice("Failed to delete image");
+        }
+      }
+    };
+
+    // Move to attachment folder button
+    const moveContainer = container.createDiv({
+      cls: "attachmenter-action-item",
+    });
+    moveContainer
+      .createEl("div", { cls: "attachmenter-action-info" })
+      .createEl("strong", { text: "Move to Attachment Folder" });
+    moveContainer
+      .createEl("div", { cls: "attachmenter-action-desc" })
+      .createEl("p", {
+        text: "Move this image to the note's attachment folder",
+      });
+
+    const moveButton = moveContainer.createEl("button", {
+      text: "Move",
+      cls: "mod-cta",
+    });
+    moveButton.onclick = async () => {
+      const suggestedPath = this.pathResolver.getAttachmentFolderForNote(
+        this.activeFile
+      );
+      const newPath = normalizePath(join(suggestedPath, this.file.name));
+      try {
+        await this.onRename(newPath);
+        this.currentPath = newPath;
+        this.originalPath = newPath;
+        new Notice("Image moved successfully");
+      } catch (error) {
+        console.error("Error moving image:", error);
+        new Notice("Failed to move image");
+      }
+    };
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}

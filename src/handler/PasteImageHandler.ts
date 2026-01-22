@@ -14,7 +14,7 @@ import {
 import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
 import { NameResolver } from "../path/NameResolver";
-import { PasteImageDeleteModal } from "../ui/PasteImageDeleteModal";
+import { PasteImageManagerModal } from "../ui/PasteImageManagerModal";
 
 // Simple path utilities for browser environment
 function join(...parts: string[]): string {
@@ -183,18 +183,88 @@ export class PasteImageHandler {
     activeFile: TFile,
     folderPath: string
   ) {
-    const modal = new PasteImageDeleteModal(
+    const modal = new PasteImageManagerModal(
       this.app,
       this.vault,
+      this.fileManager,
+      this.workspace,
       file,
       linkTextOrPath,
       activeView,
       activeFile,
-      async () => {
+      folderPath,
+      this.settings,
+      async (folderPath) => {
         await this._deleteImage(file, linkTextOrPath, activeView, activeFile, folderPath);
+      },
+      async (newPath) => {
+        await this._renameImage(file, newPath, activeView, activeFile);
       }
     );
     modal.open();
+  }
+
+  private async _renameImage(
+    file: TFile,
+    newPath: string,
+    activeView: TextFileView,
+    activeFile: TFile
+  ) {
+    try {
+      const oldPath = file.path;
+      
+      // Ensure parent directory exists
+      const newPathDir = newPath.substring(0, newPath.lastIndexOf("/"));
+      if (!(await this.vault.adapter.exists(newPathDir))) {
+        await this.vault.createFolder(newPathDir);
+      }
+
+      // For markdown, we need to get the old link text first
+      let oldLinkText = "";
+      if (activeFile.extension === "md") {
+        // Re-rename to same path to ensure correct link generation
+        await this.fileManager.renameFile(file, file.path);
+        oldLinkText = this.fileManager.generateMarkdownLink(
+          file,
+          activeFile.path
+        );
+      }
+
+      // Rename the file
+      await this.fileManager.renameFile(file, newPath);
+
+      // Get the renamed file
+      const renamedFile = this.vault.getAbstractFileByPath(newPath);
+      if (!(renamedFile instanceof TFile)) {
+        throw new Error("Failed to get renamed file");
+      }
+
+      // Update content
+      let content = activeView.getViewData();
+      if (activeFile.extension === "md") {
+        const newLinkText = this.fileManager.generateMarkdownLink(
+          renamedFile,
+          activeFile.path
+        );
+        content = content.replace(oldLinkText, newLinkText);
+      } else if (activeFile.extension === "canvas") {
+        const data = JSON.parse(content) as {
+          nodes?: Array<{ type?: string; file?: string }>;
+        };
+        if (Array.isArray(data.nodes)) {
+          data.nodes.forEach((node) => {
+            if (node.type === "file" && node.file === oldPath) {
+              node.file = newPath;
+            }
+          });
+          content = JSON.stringify(data, null, "\t");
+        }
+      }
+      activeView.setViewData(content, false);
+    } catch (error) {
+      console.error("Error renaming image:", error);
+      throw error;
+    }
   }
 
   private async _deleteImage(
