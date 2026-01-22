@@ -45,7 +45,7 @@ export const en: TranslationMap = {
     },
     aeroFolder: {
       name: "Aero folder style",
-      desc: "Apply AERO (semi-transparent) style to attachment folders."
+      desc: "Apply Aero (semi-transparent) style to attachment folders."
     },
     autoRenameFolder: {
       name: "Auto rename folder",
@@ -102,14 +102,14 @@ export const en: TranslationMap = {
     missingFolders: "Missing folders: {count}",
     nameMismatches: "Name mismatches: {count}",
     invalidChars: "Files with invalid characters: {count}",
-    allValid: "✓ All paths are valid!",
+    allValid: "✓ All paths are valid",
     issuesFound: "Issues found",
     missingFoldersTitle: "Missing folders",
     nameMismatchesTitle: "Name mismatches",
     invalidCharsTitle: "Invalid characters",
     expected: "Expected: {path}",
     actual: "Actual: {path}",
-    nA: "N/A",
+    nA: "N/a",
     invalidCharacters: "Invalid characters: {chars}",
     noteName: "Note name: {name}",
     moreIssues: "... and {count} more issues",
@@ -127,7 +127,7 @@ export const en: TranslationMap = {
     use: "Use",
     applyPathChange: "Apply path change",
 
-    deleteConfirm: "⚠️ Are you sure you want to delete this image?",
+    deleteConfirm: "Are you sure you want to delete this image?",
     deleteConfirmDesc: "This action cannot be undone.",
     confirmDelete: "Confirm delete",
     pastedTitle: "Image pasted",

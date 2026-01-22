@@ -9,6 +9,9 @@ import { PathCheckModal } from "./PathCheckModal";
 import { t, setLanguage } from "../i18n/index";
 import { getSupportedLanguages } from "../i18n/loader";
 
+// Default date format for moment.js (not UI text)
+const DEFAULT_DATE_FORMAT = "YYYYMMDDHHmmssSSS";
+
 export class AttachmenterSettingTab extends PluginSettingTab {
   plugin: AttachmenterPlugin;
 
@@ -62,10 +65,10 @@ export class AttachmenterSettingTab extends PluginSettingTab {
         .setDesc(t("settings.folderSuffix.desc"))
         .addText((text) =>
           text
-            .setPlaceholder("_Attachments")
+            .setPlaceholder("_attachments")
             .setValue(this.plugin.settings.defaultFolderSuffix)
             .onChange(async (value) => {
-              this.plugin.settings.defaultFolderSuffix = value || "_Attachments";
+              this.plugin.settings.defaultFolderSuffix = value || "_attachments";
               await this.plugin.saveSettings();
             })
         );
@@ -90,11 +93,11 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       .setDesc(t("settings.dateFormat.desc"))
       .addMomentFormat((component: MomentFormatComponent) => {
         component
-          .setPlaceholder("YYYYMMDDHHmmssSSS")
+          .setPlaceholder(DEFAULT_DATE_FORMAT)
           .setValue(this.plugin.settings.dateFormat)
           .onChange(async (value) => {
             this.plugin.settings.dateFormat =
-              value || "YYYYMMDDHHmmssSSS";
+              value || DEFAULT_DATE_FORMAT;
             await this.plugin.saveSettings();
           });
       });
