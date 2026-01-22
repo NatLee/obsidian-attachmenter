@@ -1,5 +1,3 @@
-import { moment } from "obsidian";
-
 export interface AttachmenterSettings {
   /** Use simple per-note folder mode or advanced templated mode. */
   simpleMode: boolean;

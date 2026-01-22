@@ -83,7 +83,7 @@ export default class AttachmenterPlugin extends Plugin {
     // Register file creation event to handle pasted images
     this.registerEvent(
       this.app.vault.on("create", (file) => {
-        this.pasteImageHandler.handle(file);
+        void this.pasteImageHandler.handle(file);
       })
     );
 
@@ -102,7 +102,7 @@ export default class AttachmenterPlugin extends Plugin {
     }
   }
 
-  async onunload() {
+  onunload() {
     this.hideFolderRibbon.unload();
     // Restore the original vault attachment configuration
     this.vaultAttachmentConfiguration.restore();

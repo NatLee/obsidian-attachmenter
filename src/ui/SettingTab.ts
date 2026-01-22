@@ -18,7 +18,9 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Attachmenter Settings" });
+    new Setting(containerEl)
+      .setName("Attachmenter settings")
+      .setHeading();
 
     new Setting(containerEl)
       .setName("Simple mode")
@@ -76,7 +78,9 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           });
       });
 
-    containerEl.createEl("h3", { text: "Folder Display" });
+    new Setting(containerEl)
+      .setName("Folder display")
+      .setHeading();
 
     new Setting(containerEl)
       .setName("Hide attachment folders")
@@ -92,7 +96,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("AERO folder style")
+      .setName("Aero folder style")
       .setDesc("Apply AERO (semi-transparent) style to attachment folders.")
       .addToggle((toggle) =>
         toggle

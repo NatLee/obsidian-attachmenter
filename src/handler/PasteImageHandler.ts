@@ -38,8 +38,6 @@ export class PasteImageHandler {
   }
 
   async handle(file: TAbstractFile) {
-    console.log("Handle File Create:", file.path);
-
     if (!(file instanceof TFile)) {
       return;
     }
@@ -53,18 +51,15 @@ export class PasteImageHandler {
     const activeFile = activeView?.file;
 
     if (!activeFile) {
-      console.log("No active file found");
       return;
     }
 
     // active text file, `md` or `canvas`
     if (activeFile.extension !== "md" && activeFile.extension !== "canvas") {
-      console.log("Active file is not md or canvas:", activeFile.extension);
       return;
     }
 
     const folderPath = this.pathResolver.getAttachmentFolderForNote(activeFile);
-    console.log("Target attachment folder:", folderPath);
 
     // 确保文件夹存在
     if (!(await this.vault.adapter.exists(folderPath))) {
@@ -80,11 +75,8 @@ export class PasteImageHandler {
 
     // 检查文件是否已经在正确的路径（避免重复处理）
     if (normalizePath(file.path) === newPath) {
-      console.log("File is already in the correct location:", newPath);
       return;
     }
-
-    console.log("Moving pasted image from:", file.path, "to:", newPath);
 
     if (activeFile.extension === "md") {
       await this._rename4MD(file, newPath, activeView, activeFile);
@@ -107,7 +99,6 @@ export class PasteImageHandler {
         file,
         activeFile.path
       );
-      console.log("Old link text:", oldLinkText);
 
       // 移动文件到新路径
       await this.fileManager.renameFile(file, newPath);
@@ -115,7 +106,6 @@ export class PasteImageHandler {
         file,
         activeFile.path
       );
-      console.log("New link text:", newLinkText);
 
       // 更新markdown内容中的链接
       let content = activeView.getViewData();
@@ -139,9 +129,9 @@ export class PasteImageHandler {
       let content = activeView.getViewData();
       // 更新canvas内容中的文件路径
       // Canvas文件使用JSON格式，需要替换文件路径
-      const data = JSON.parse(content);
+      const data = JSON.parse(content) as { nodes?: Array<{ type?: string; file?: string }> };
       if (Array.isArray(data.nodes)) {
-        data.nodes.forEach((node: any) => {
+        data.nodes.forEach((node) => {
           if (node.type === "file" && node.file === oldPath) {
             node.file = newPath;
           }

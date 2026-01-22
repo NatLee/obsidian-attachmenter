@@ -16,9 +16,7 @@ export class FileOpenHandler {
     this.pathResolver = pathResolver;
   }
 
-  async handle(file: TFile | null) {
-    console.log("Handle File Open:", file?.path);
-
+  handle(file: TFile | null) {
     if (file == null) {
       return;
     }
@@ -30,7 +28,6 @@ export class FileOpenHandler {
 
     // Get the correct attachment folder path for this note
     const folderPath = this.pathResolver.getAttachmentFolderForNote(file);
-    console.log("Updating vault attachment path to:", folderPath);
 
     // Update the vault's attachment folder path configuration
     // This will make the paste image dialog show the correct path

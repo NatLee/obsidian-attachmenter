@@ -38,7 +38,7 @@ export class HideFolderRibbon {
       "Toggle attachment folder visibility",
       (evt: MouseEvent) => {
         this.plugin.settings.hideFolder = !this.plugin.settings.hideFolder;
-        this.plugin.saveSettings();
+        void this.plugin.saveSettings();
         this.refresh();
       }
     );
@@ -55,7 +55,7 @@ export class HideFolderRibbon {
       name: "Toggle attachment folder visibility",
       callback: () => {
         this.plugin.settings.hideFolder = !this.plugin.settings.hideFolder;
-        this.plugin.saveSettings();
+        void this.plugin.saveSettings();
         this.refresh();
       },
     });
@@ -77,7 +77,7 @@ export class HideFolderRibbon {
     this.refreshFolders();
   }
 
-  async refresh() {
+  refresh() {
     setIcon(
       this.ribbonIconButton,
       this.plugin.settings.hideFolder ? "eye-off" : "eye"
@@ -85,10 +85,10 @@ export class HideFolderRibbon {
     this.statusBarItem.setText(
       this.plugin.settings.hideFolder ? "Attachment folders hidden" : ""
     );
-    await this.refreshFolders();
+    this.refreshFolders();
   }
 
-  async refreshFolders() {
+  refreshFolders() {
     const filter = buildFolderRegExp(this.plugin.settings);
     const folders = document.querySelectorAll(".nav-folder-title-content");
 

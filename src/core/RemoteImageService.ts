@@ -2,7 +2,6 @@ import {
   FileManager,
   FileSystemAdapter,
   Notice,
-  TAbstractFile,
   TFile,
   TextFileView,
   Vault,
@@ -154,7 +153,7 @@ export class RemoteImageService {
     }
 
     // Download all images
-    let time = (moment() as any);
+    let time = moment();
     const replacements: Promise<string>[] = matches.map((m) => {
       time = time.add(1, "m");
       const baseName = this.nameResolver.buildBaseName(note, time);
@@ -165,13 +164,6 @@ export class RemoteImageService {
 
     const replacementTexts = await Promise.all(replacements);
 
-    // Debug: log all replacements
-    console.log(`Found ${matches.length} remote images`);
-    replacementTexts.forEach((replacement, i) => {
-      const changed = replacement !== matches[i].match;
-      console.log(`Replacement ${i + 1}: "${matches[i].match}" -> "${replacement}" ${changed ? "✓" : "✗"}`);
-    });
-
     // Count successful replacements
     let replacedCount = 0;
     for (let i = 0; i < replacementTexts.length; i++) {
@@ -179,8 +171,6 @@ export class RemoteImageService {
         replacedCount++;
       }
     }
-
-    console.log(`Successfully replaced ${replacedCount} out of ${matches.length} images`);
 
     // Use simple replace approach like obsidian-attachment-management
     // Create a copy of replacementTexts array for shift()
@@ -191,9 +181,6 @@ export class RemoteImageService {
       const matchIndex = matches.findIndex((m) => m.match === match);
       if (matchIndex >= 0 && matchIndex < replacementsArray.length) {
         const replacement = replacementsArray[matchIndex];
-        if (replacement !== match) {
-          console.log(`Replacing: "${match.substring(0, 50)}..." -> "${replacement.substring(0, 50)}..."`);
-        }
         return replacement;
       }
       return match;
@@ -245,23 +232,18 @@ export class RemoteImageService {
       return match;
     }
 
-    console.log(`Downloading image from: ${link}, alt: "${alt}"`);
     const downloaded = await this.download(link, imagePath);
     if (!(downloaded instanceof TFile)) {
       console.warn(`Failed to download: ${link} (result: ${downloaded})`);
       return match;
     }
 
-    console.log(`Downloaded to: ${downloaded.path}`);
-
     // Generate markdown link - ensure it's an image link with !
     // generateMarkdownLink(file, sourcePath, subpath?, displayText?)
     let linkText = this.fileManager.generateMarkdownLink(downloaded, note.path, undefined, alt);
-    console.log(`Generated link text: "${linkText}"`);
     
     // If it's already an image link, return as is
     if (linkText.startsWith("!")) {
-      console.log(`Link already has ! prefix, using as is: "${linkText}"`);
       return linkText;
     }
     
@@ -269,19 +251,13 @@ export class RemoteImageService {
     // Handle both [text](path) and [[path]] formats
     if (linkText.startsWith("[[")) {
       // Convert [[path]] to ![[path]]
-      const result = "!" + linkText;
-      console.log(`Converted [[link]] to image: "${result}"`);
-      return result;
+      return "!" + linkText;
     } else if (linkText.startsWith("[")) {
       // Convert [text](path) to ![text](path)
-      const result = "!" + linkText;
-      console.log(`Converted [link] to image: "${result}"`);
-      return result;
+      return "!" + linkText;
     } else {
       // Fallback: wrap in image syntax
-      const result = `![${alt || ""}](${linkText})`;
-      console.log(`Wrapped in image syntax: "${result}"`);
-      return result;
+      return `![${alt || ""}](${linkText})`;
     }
   }
 
@@ -303,7 +279,6 @@ export class RemoteImageService {
     const trimmed = url.trim();
     if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
       try {
-        // eslint-disable-next-line no-new
         new URL(trimmed);
         return true;
       } catch {
@@ -314,7 +289,6 @@ export class RemoteImageService {
     // Also check for data: URLs and other protocols
     if (trimmed.includes("://")) {
       try {
-        // eslint-disable-next-line no-new
         new URL(trimmed);
         return true;
       } catch {
@@ -327,9 +301,7 @@ export class RemoteImageService {
 
   private async download(url: string, imagePath: string) {
     try {
-      console.log(`Requesting URL: ${url}`);
       const response = await requestUrl(url);
-      console.log(`Response status: ${response.status}`);
       
       if (response.status !== 200) {
         console.error(`Failed to download ${url}: status ${response.status}`);
@@ -338,7 +310,6 @@ export class RemoteImageService {
 
       const rawType = response.headers["content-type"] ?? "";
       const contentType = rawType.split(";")[0].trim();
-      console.log(`Content type: ${contentType}`);
       
       // 如果 Header 沒給出正確的圖片類型，嘗試從 URL 結尾抓取
       let extension = IMAGE_CONTENT_TYPES[contentType];
@@ -354,7 +325,6 @@ export class RemoteImageService {
 
       if (!extension) {
         console.error(`Unsupported content type: ${contentType} for ${url}`);
-        console.log(`Available types: ${Object.keys(IMAGE_CONTENT_TYPES).join(", ")}`);
         return false;
       }
 
@@ -364,20 +334,17 @@ export class RemoteImageService {
         fullPath = fullPath.substring(2);
       }
       fullPath = normalizePath(fullPath);
-      console.log(`Creating file at: ${fullPath}`);
       
       // Check if file already exists and delete it first
       const existingFile = this.vault.getAbstractFileByPath(fullPath);
       if (existingFile instanceof TFile) {
-        console.log(`File already exists, deleting: ${fullPath}`);
-        await this.vault.delete(existingFile);
+        await this.fileManager.trashFile(existingFile);
         // Wait a bit after deletion
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       
       // Use arrayBuffer directly, not response.arrayBuffer (which might be a getter)
       const arrayBuffer = await response.arrayBuffer;
-      console.log(`ArrayBuffer size: ${arrayBuffer.byteLength} bytes`);
       
       const file = await this.vault.createBinary(fullPath, arrayBuffer);
       
@@ -388,29 +355,18 @@ export class RemoteImageService {
           await new Promise((resolve) => setTimeout(resolve, 100));
           const createdFile = this.vault.getAbstractFileByPath(fullPath);
           if (createdFile instanceof TFile) {
-            console.log(`File found after retry ${i + 1}: ${createdFile.path}`);
             return createdFile;
           }
           // Also try with ./ prefix
           const altPath = "./" + fullPath;
           const altFile = this.vault.getAbstractFileByPath(altPath);
           if (altFile instanceof TFile) {
-            console.log(`File found with ./ prefix after retry ${i + 1}: ${altFile.path}`);
             return altFile;
           }
         }
         console.error(`File not found in vault after createBinary: ${fullPath}`);
-        // List files in the directory to debug
-        const folderPath = fullPath.substring(0, fullPath.lastIndexOf("/"));
-        const folder = this.vault.getAbstractFileByPath(folderPath);
-        if (folder) {
-          console.log(`Folder exists: ${folderPath}`);
-        } else {
-          console.log(`Folder does not exist: ${folderPath}`);
-        }
         return false;
       }
-      console.log(`File created successfully: ${file.path}`);
       return file;
     } catch (error) {
       console.error(`Error downloading ${url}:`, error);
