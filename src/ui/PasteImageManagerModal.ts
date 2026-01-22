@@ -13,6 +13,7 @@ import {
 
 import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
+import { t } from "../i18n/index";
 
 // Simple path utilities for browser environment
 function join(...parts: string[]): string {
@@ -58,7 +59,7 @@ export class PasteImageManagerModal extends Modal {
     const header = contentEl.createDiv({ cls: "attachmenter-modal-header" });
     const titleRow = header.createDiv({ cls: "attachmenter-title-row" });
     titleRow.createEl("h2", {
-      text: "Manage Pasted Image",
+      text: t("pasteImage.manageTitle"),
       cls: "attachmenter-modal-title",
     });
 
@@ -71,7 +72,7 @@ export class PasteImageManagerModal extends Modal {
     // Footer buttons
     const footer = contentEl.createDiv({ cls: "attachmenter-modal-footer" });
     const keepButton = footer.createEl("button", {
-      text: "Keep",
+      text: t("common.keep"),
       cls: "mod-cta",
     });
     keepButton.onclick = () => {
@@ -111,7 +112,7 @@ export class PasteImageManagerModal extends Modal {
     const img = previewContainer.createEl("img", {
       attr: {
         src: this.vault.getResourcePath(this.file),
-        alt: "Pasted image preview",
+        alt: t("pasteImage.previewAlt"),
       },
       cls: "attachmenter-preview-image",
     });
@@ -126,13 +127,13 @@ export class PasteImageManagerModal extends Modal {
     const fileName = infoContainer.createDiv({
       cls: "attachmenter-file-name",
     });
-    fileName.createEl("strong", { text: "File: " });
+    fileName.createEl("strong", { text: t("common.file") + ": " });
     fileName.createEl("span", { text: this.file.name });
 
     const filePath = infoContainer.createDiv({
       cls: "attachmenter-file-path",
     });
-    filePath.createEl("strong", { text: "Path: " });
+    filePath.createEl("strong", { text: t("common.path") + ": " });
     filePath.createEl("span", { text: this.file.path });
 
     // Path section (full width)
@@ -151,20 +152,20 @@ export class PasteImageManagerModal extends Modal {
 
   private _renderPathPanel(container: HTMLElement) {
     container.createEl("p", {
-      text: "Change the save location for this image:",
+      text: t("pasteImage.changeLocation"),
       cls: "attachmenter-description",
     });
 
     // Current path display
     const currentPathSetting = new Setting(container)
-      .setName("Current path")
+      .setName(t("pasteImage.currentPath"))
       .setDesc(this.currentPath)
       .setDisabled(true);
 
     // New path input
     const newPathSetting = new Setting(container)
-      .setName("New path")
-      .setDesc("Enter the new path for this image")
+      .setName(t("pasteImage.newPath"))
+      .setDesc(t("pasteImage.newPathDesc"))
       .addText((text) => {
         text.setValue(this.currentPath);
         text.inputEl.onchange = () => {
@@ -177,7 +178,7 @@ export class PasteImageManagerModal extends Modal {
       cls: "attachmenter-suggested-paths",
     });
     suggestedContainer.createEl("p", {
-      text: "Suggested paths:",
+      text: t("pasteImage.suggestedPaths"),
       cls: "attachmenter-suggested-title",
     });
 
@@ -194,7 +195,7 @@ export class PasteImageManagerModal extends Modal {
     });
     suggestedItem.createEl("code", { text: suggestedFullPath });
     const useSuggestedBtn = suggestedItem.createEl("button", {
-      text: "Use",
+      text: t("pasteImage.use"),
       cls: "mod-small",
     });
     useSuggestedBtn.onclick = () => {
@@ -206,7 +207,7 @@ export class PasteImageManagerModal extends Modal {
 
     // Apply button
     const applyButton = container.createEl("button", {
-      text: "Apply Path Change",
+      text: t("pasteImage.applyPathChange"),
       cls: "mod-cta",
     });
     applyButton.onclick = async () => {
@@ -214,12 +215,12 @@ export class PasteImageManagerModal extends Modal {
         try {
           await this.onRename(this.currentPath);
           this.originalPath = this.currentPath;
-          new Notice("Path updated successfully");
+          new Notice(t("notices.pathUpdated"));
           // Update display
           currentPathSetting.setDesc(this.currentPath);
         } catch (error) {
           console.error("Error changing path:", error);
-          new Notice("Failed to change path");
+          new Notice(t("notices.pathUpdateFailed"));
         }
       }
     };
@@ -238,7 +239,7 @@ export class PasteImageManagerModal extends Modal {
 
   private _renderNormalActions(container: HTMLElement) {
     container.createEl("p", {
-      text: "Available actions for this image:",
+      text: t("pasteImage.availableActions"),
       cls: "attachmenter-description",
     });
 
@@ -248,17 +249,17 @@ export class PasteImageManagerModal extends Modal {
     });
     deleteContainer.createEl("div", {
       cls: "attachmenter-action-info",
-    }).createEl("strong", { text: "Delete Image" });
+    }).createEl("strong", { text: t("pasteImage.deleteImage") });
     deleteContainer
       .createEl("div", {
         cls: "attachmenter-action-desc",
       })
       .createEl("p", {
-        text: "Remove this image from your vault and the note",
+        text: t("pasteImage.deleteImageDesc"),
       });
 
     const deleteButton = deleteContainer.createEl("button", {
-      text: "Delete",
+      text: t("pasteImage.delete"),
       cls: "mod-warning",
     });
     deleteButton.onclick = () => {
@@ -274,15 +275,15 @@ export class PasteImageManagerModal extends Modal {
     });
     moveContainer
       .createEl("div", { cls: "attachmenter-action-info" })
-      .createEl("strong", { text: "Move to Attachment Folder" });
+      .createEl("strong", { text: t("pasteImage.moveToFolder") });
     moveContainer
       .createEl("div", { cls: "attachmenter-action-desc" })
       .createEl("p", {
-        text: "Move this image to the note's attachment folder",
+        text: t("pasteImage.moveToFolderDesc"),
       });
 
     const moveButton = moveContainer.createEl("button", {
-      text: "Move",
+      text: t("pasteImage.move"),
       cls: "mod-cta",
     });
     moveButton.onclick = async () => {
@@ -294,10 +295,10 @@ export class PasteImageManagerModal extends Modal {
         await this.onRename(newPath);
         this.currentPath = newPath;
         this.originalPath = newPath;
-        new Notice("Image moved successfully");
+        new Notice(t("notices.imageMoved"));
       } catch (error) {
         console.error("Error moving image:", error);
-        new Notice("Failed to move image");
+        new Notice(t("notices.imageMoveFailed"));
       }
     };
   }
@@ -308,11 +309,11 @@ export class PasteImageManagerModal extends Modal {
       cls: "attachmenter-delete-warning",
     });
     warningContainer.createEl("p", {
-      text: "⚠️ Are you sure you want to delete this image?",
+      text: t("pasteImage.deleteConfirm"),
       cls: "attachmenter-warning-text",
     });
     warningContainer.createEl("p", {
-      text: "This action cannot be undone.",
+      text: t("pasteImage.deleteConfirmDesc"),
       cls: "attachmenter-warning-detail",
     });
 
@@ -322,7 +323,7 @@ export class PasteImageManagerModal extends Modal {
     });
 
     const cancelButton = buttonContainer.createEl("button", {
-      text: "Cancel",
+      text: t("common.cancel"),
       cls: "mod-cta",
     });
     cancelButton.onclick = () => {
@@ -333,7 +334,7 @@ export class PasteImageManagerModal extends Modal {
     };
 
     const confirmButton = buttonContainer.createEl("button", {
-      text: "Confirm Delete",
+      text: t("pasteImage.confirmDelete"),
       cls: "mod-warning",
     });
     confirmButton.onclick = async () => {
@@ -342,7 +343,7 @@ export class PasteImageManagerModal extends Modal {
         this.close();
       } catch (error) {
         console.error("Error deleting image:", error);
-        new Notice("Failed to delete image");
+        new Notice(t("notices.imageDeleteFailed"));
         // Reset to normal state on error
         this.isDeleting = false;
         if (this.actionsPanelContainer) {

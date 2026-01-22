@@ -12,6 +12,7 @@ import { VaultAttachmentConfiguration } from "./src/components/VaultAttachmentCo
 import { FileOpenHandler } from "./src/handler/FileOpenHandler";
 import { RenameHandler } from "./src/handler/RenameHandler";
 import { PathResolver } from "./src/path/PathResolver";
+import { initI18n, setLanguage, t } from "./src/i18n/index";
 
 export default class AttachmenterPlugin extends Plugin {
   settings: AttachmenterSettings;
@@ -24,6 +25,9 @@ export default class AttachmenterPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
+
+    // Initialize i18n with settings language
+    initI18n(this.settings.language);
 
     // Initialize vault attachment configuration to manage Obsidian's attachment path
     this.vaultAttachmentConfiguration = new VaultAttachmentConfiguration(
@@ -67,7 +71,7 @@ export default class AttachmenterPlugin extends Plugin {
 
     this.addCommand({
       id: "download-remote-images-active",
-      name: "Download remote images in active file",
+      name: t("commands.downloadRemoteImagesActive"),
       callback: async () => {
         await this.remoteImageService.downloadForActiveFile();
       },
@@ -80,7 +84,7 @@ export default class AttachmenterPlugin extends Plugin {
 
         menu.addItem((item) => {
           item
-            .setTitle("Download remote images")
+            .setTitle(t("menu.downloadRemoteImages"))
             .setIcon("download")
             .onClick(async () => {
               await this.remoteImageService.downloadForFile(file);
@@ -137,6 +141,10 @@ export default class AttachmenterPlugin extends Plugin {
       DEFAULT_SETTINGS,
       await this.loadData()
     );
+    // Update i18n language if settings changed
+    if (this.settings.language) {
+      setLanguage(this.settings.language);
+    }
   }
 
   async saveSettings() {

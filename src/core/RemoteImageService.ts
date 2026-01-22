@@ -14,6 +14,7 @@ import {
 import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
 import { NameResolver } from "../path/NameResolver";
+import { t } from "../i18n/index";
 
 // Simple path utilities for browser environment
 function join(...parts: string[]): string {
@@ -56,7 +57,7 @@ export class RemoteImageService {
     const activeView = this.workspace.getActiveViewOfType(TextFileView);
     const activeFile = activeView?.file;
     if (!activeFile) {
-      new Notice("No active file found");
+      new Notice(t("notices.noActiveFile"));
       return;
     }
 
@@ -71,9 +72,9 @@ export class RemoteImageService {
       );
       if (content !== newContent) {
         activeView.setViewData(newContent, false);
-        new Notice(`Replaced ${replacedCount} remote image(s)`);
+        new Notice(t("notices.replacedCount", { count: replacedCount }));
       } else if (replacedCount === 0) {
-        new Notice("No remote images found to download");
+        new Notice(t("notices.noRemoteImages"));
       }
       return;
     }
@@ -87,9 +88,9 @@ export class RemoteImageService {
       );
       if (content !== newContent) {
         activeView.setViewData(newContent, false);
-        new Notice(`Replaced ${replacedCount} remote image(s)`);
+        new Notice(t("notices.replacedCount", { count: replacedCount }));
       } else if (replacedCount === 0) {
-        new Notice("No remote images found to download");
+        new Notice(t("notices.noRemoteImages"));
       }
     }
   }
@@ -107,9 +108,9 @@ export class RemoteImageService {
     );
     if (content !== newContent) {
       await this.vault.modify(file, newContent);
-      new Notice(`Replaced ${replacedCount} remote image(s) in ${file.name}`);
+      new Notice(t("notices.replacedCountInFile", { count: replacedCount, filename: file.name }));
     } else if (replacedCount === 0) {
-      new Notice(`No remote images found in ${file.name}`);
+      new Notice(t("notices.noRemoteImagesInFile", { filename: file.name }));
     }
   }
 

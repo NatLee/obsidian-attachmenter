@@ -6,6 +6,8 @@ import {
 } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { PathCheckModal } from "./PathCheckModal";
+import { t, setLanguage } from "../i18n/index";
+import { getSupportedLanguages } from "../i18n/loader";
 
 export class AttachmenterSettingTab extends PluginSettingTab {
   plugin: AttachmenterPlugin;
@@ -20,12 +22,30 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     new Setting(containerEl)
-      .setName("Attachmenter settings")
+      .setName(t("settings.title"))
       .setHeading();
 
+    // Language selector
     new Setting(containerEl)
-      .setName("Simple mode")
-      .setDesc("Use per-note attachment folders with a simple naming pattern.")
+      .setName(t("settings.language.name"))
+      .setDesc(t("settings.language.desc"))
+      .addDropdown((dropdown) => {
+        const languages = getSupportedLanguages();
+        languages.forEach((lang) => {
+          dropdown.addOption(lang.code, lang.nativeName);
+        });
+        dropdown.setValue(this.plugin.settings.language);
+        dropdown.onChange(async (value) => {
+          this.plugin.settings.language = value as typeof this.plugin.settings.language;
+          setLanguage(value as typeof this.plugin.settings.language);
+          await this.plugin.saveSettings();
+          this.display(); // Re-render to update all text
+        });
+      });
+
+    new Setting(containerEl)
+      .setName(t("settings.simpleMode.name"))
+      .setDesc(t("settings.simpleMode.desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.simpleMode)
@@ -38,8 +58,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
 
     if (this.plugin.settings.simpleMode) {
       new Setting(containerEl)
-        .setName("Folder suffix")
-        .setDesc("Suffix for the per-note attachment folder, e.g. `_Attachments`.")
+        .setName(t("settings.folderSuffix.name"))
+        .setDesc(t("settings.folderSuffix.desc"))
         .addText((text) =>
           text
             .setPlaceholder("_Attachments")
@@ -51,8 +71,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
         );
 
       new Setting(containerEl)
-        .setName("Attachment name format")
-        .setDesc("Use {notename} and {date}, e.g. `{notename}-{date}`.")
+        .setName(t("settings.attachmentNameFormat.name"))
+        .setDesc(t("settings.attachmentNameFormat.desc"))
         .addText((text) =>
           text
             .setPlaceholder("{notename}-{date}")
@@ -66,8 +86,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     }
 
     new Setting(containerEl)
-      .setName("Date format")
-      .setDesc("Moment.js date format used for {date}.")
+      .setName(t("settings.dateFormat.name"))
+      .setDesc(t("settings.dateFormat.desc"))
       .addMomentFormat((component: MomentFormatComponent) => {
         component
           .setPlaceholder("YYYYMMDDHHmmssSSS")
@@ -80,12 +100,12 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Folder display")
+      .setName(t("settings.folderDisplay.name"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Hide attachment folders")
-      .setDesc("Hide attachment folders in the file explorer. You can toggle this from the ribbon icon.")
+      .setName(t("settings.hideFolder.name"))
+      .setDesc(t("settings.hideFolder.desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.hideFolder)
@@ -97,8 +117,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Aero folder style")
-      .setDesc("Apply AERO (semi-transparent) style to attachment folders.")
+      .setName(t("settings.aeroFolder.name"))
+      .setDesc(t("settings.aeroFolder.desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.aeroFolder)
@@ -110,12 +130,12 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Auto rename folder")
+      .setName(t("settings.autoRenameFolder.name"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Auto rename attachment folder")
-      .setDesc("Automatically rename the attachment folder when the note is renamed.")
+      .setName(t("settings.autoRenameAttachmentFolder.name"))
+      .setDesc(t("settings.autoRenameAttachmentFolder.desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.autoRenameFolder)
@@ -126,12 +146,12 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Path validation")
+      .setName(t("settings.pathValidation.name"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Prompt to rename images")
-      .setDesc("When moving images during path check, prompt user to rename each image. If disabled, use default naming format.")
+      .setName(t("settings.promptRenameImage.name"))
+      .setDesc(t("settings.promptRenameImage.desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.promptRenameImage)
@@ -142,11 +162,11 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Check attachment folder paths")
-      .setDesc("Validate all attachment folder paths and check for issues (invalid characters, missing folders, name mismatches).")
+      .setName(t("settings.checkPaths.name"))
+      .setDesc(t("settings.checkPaths.desc"))
       .addButton((button) =>
         button
-          .setButtonText("Check Paths")
+          .setButtonText(t("settings.checkPaths.button"))
           .setCta()
           .onClick(() => {
             const modal = new PathCheckModal(

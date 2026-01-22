@@ -18,6 +18,7 @@ import {
 } from "../lib/PathValidator";
 import { NameResolver } from "../path/NameResolver";
 import { RenameImageModal } from "./RenameImageModal";
+import { t } from "../i18n/index";
 
 export class PathCheckModal extends Modal {
   private validationResult: ValidationResult | null = null;
@@ -39,9 +40,9 @@ export class PathCheckModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    contentEl.createEl("h2", { text: "Path Validation" });
+    contentEl.createEl("h2", { text: t("pathCheck.title") });
     contentEl.createEl("p", {
-      text: "Checking attachment folder paths for all notes...",
+      text: t("pathCheck.checking"),
       cls: "attachmenter-check-status",
     });
 
@@ -63,7 +64,7 @@ export class PathCheckModal extends Modal {
       this.renderResults();
     } catch (error) {
       console.error("Error validating paths:", error);
-      new Notice("Failed to validate paths");
+      new Notice(t("notices.validationFailed"));
     } finally {
       this.isRunning = false;
     }
@@ -84,24 +85,24 @@ export class PathCheckModal extends Modal {
       cls: "attachmenter-validation-summary",
     });
 
-    summaryContainer.createEl("h3", { text: "Summary" });
+    summaryContainer.createEl("h3", { text: t("pathCheck.summary") });
     const summaryList = summaryContainer.createEl("ul");
     summaryList.createEl("li", {
-      text: `Total files checked: ${this.validationResult.totalFiles}`,
+      text: t("pathCheck.totalFilesChecked", { count: this.validationResult.totalFiles }),
     });
     summaryList.createEl("li", {
-      text: `Missing folders: ${this.validationResult.summary.missing}`,
+      text: t("pathCheck.missingFolders", { count: this.validationResult.summary.missing }),
     });
     summaryList.createEl("li", {
-      text: `Name mismatches: ${this.validationResult.summary.nameMismatch}`,
+      text: t("pathCheck.nameMismatches", { count: this.validationResult.summary.nameMismatch }),
     });
     summaryList.createEl("li", {
-      text: `Files with invalid characters: ${this.validationResult.summary.invalidChars}`,
+      text: t("pathCheck.invalidChars", { count: this.validationResult.summary.invalidChars }),
     });
 
     if (this.validationResult.issues.length === 0) {
       contentEl.createEl("p", {
-        text: "✓ All paths are valid!",
+        text: t("pathCheck.allValid"),
         cls: "attachmenter-success-message",
       });
       return;
@@ -111,7 +112,7 @@ export class PathCheckModal extends Modal {
     const issuesContainer = contentEl.createDiv({
       cls: "attachmenter-issues-container",
     });
-    issuesContainer.createEl("h3", { text: "Issues Found" });
+    issuesContainer.createEl("h3", { text: t("pathCheck.issuesFound") });
 
     // Group issues by type
     const missingIssues = this.validationResult.issues.filter(
@@ -127,7 +128,7 @@ export class PathCheckModal extends Modal {
     if (missingIssues.length > 0) {
       this.renderIssueSection(
         issuesContainer,
-        "Missing Folders",
+        t("pathCheck.missingFoldersTitle"),
         missingIssues,
         "missing"
       );
@@ -136,7 +137,7 @@ export class PathCheckModal extends Modal {
     if (mismatchIssues.length > 0) {
       this.renderIssueSection(
         issuesContainer,
-        "Name Mismatches",
+        t("pathCheck.nameMismatchesTitle"),
         mismatchIssues,
         "name_mismatch"
       );
@@ -145,7 +146,7 @@ export class PathCheckModal extends Modal {
     if (invalidCharIssues.length > 0) {
       this.renderIssueSection(
         issuesContainer,
-        "Invalid Characters",
+        t("pathCheck.invalidCharsTitle"),
         invalidCharIssues,
         "invalid_chars"
       );
@@ -161,7 +162,7 @@ export class PathCheckModal extends Modal {
         cls: "attachmenter-fix-buttons",
       });
       const fixAllButton = buttonContainer.createEl("button", {
-        text: "Fix All Issues",
+        text: t("pathCheck.fixAll"),
         cls: "mod-cta",
       });
       fixAllButton.onclick = async () => {
@@ -194,32 +195,32 @@ export class PathCheckModal extends Modal {
       if (issueType === "missing") {
         issueItem.createEl("div", {
           cls: "attachmenter-issue-detail",
-          text: `Expected: ${issue.expectedFolderPath}`,
+          text: t("pathCheck.expected", { path: issue.expectedFolderPath }),
         });
       } else if (issueType === "name_mismatch") {
         issueItem.createEl("div", {
           cls: "attachmenter-issue-detail",
-          text: `Expected: ${issue.expectedFolderPath}`,
+          text: t("pathCheck.expected", { path: issue.expectedFolderPath }),
         });
         issueItem.createEl("div", {
           cls: "attachmenter-issue-detail",
-          text: `Actual: ${issue.actualFolderPath || "N/A"}`,
+          text: t("pathCheck.actual", { path: issue.actualFolderPath || t("pathCheck.nA") }),
         });
       } else if (issueType === "invalid_chars") {
         issueItem.createEl("div", {
           cls: "attachmenter-issue-detail",
-          text: `Invalid characters: ${issue.invalidChars?.join(", ") || "N/A"}`,
+          text: t("pathCheck.invalidCharacters", { chars: issue.invalidChars?.join(", ") || t("pathCheck.nA") }),
         });
         issueItem.createEl("div", {
           cls: "attachmenter-issue-detail",
-          text: `Note name: ${issue.file.basename}`,
+          text: t("pathCheck.noteName", { name: issue.file.basename }),
         });
       }
     });
 
     if (issues.length > 10) {
       issuesList.createEl("p", {
-        text: `... and ${issues.length - 10} more issues`,
+        text: t("pathCheck.moreIssues", { count: issues.length - 10 }),
         cls: "attachmenter-more-issues",
       });
     }
@@ -559,7 +560,10 @@ export class PathCheckModal extends Modal {
     }
 
     new Notice(
-      `Fixed ${fixed} issue(s)${failed > 0 ? `, ${failed} failed` : ""}`
+      t("notices.fixedIssues", { 
+        fixed, 
+        failed: failed > 0 ? t("notices.fixedIssuesFailed", { failed }) : "" 
+      })
     );
 
     // Re-run validation to update results

@@ -1,5 +1,6 @@
 import { App, Modal, Setting, TFile } from "obsidian";
 import { PathSanitizer } from "../lib/pathSanitizer";
+import { t } from "../i18n/index";
 
 export class RenameImageModal extends Modal {
   private newName: string;
@@ -22,15 +23,15 @@ export class RenameImageModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    contentEl.createEl("h2", { text: "Rename Image" });
+    contentEl.createEl("h2", { text: t("renameImage.title") });
 
     contentEl.createEl("p", {
-      text: `Rename image: ${this.imageFile.name}`,
+      text: t("renameImage.renameDesc", { filename: this.imageFile.name }),
     });
 
     new Setting(contentEl)
-      .setName("New name")
-      .setDesc("Enter the new name for the image (without extension)")
+      .setName(t("renameImage.newName"))
+      .setDesc(t("renameImage.newNameDesc"))
       .addText((text) => {
         text
           .setPlaceholder(this.defaultName)
@@ -45,7 +46,7 @@ export class RenameImageModal extends Modal {
 
     new Setting(contentEl).addButton((button) => {
       button
-        .setButtonText("Cancel")
+        .setButtonText(t("common.cancel"))
         .onClick(() => {
           this.cancel();
         });
@@ -53,7 +54,7 @@ export class RenameImageModal extends Modal {
 
     new Setting(contentEl).addButton((button) => {
       button
-        .setButtonText("Confirm")
+        .setButtonText(t("common.confirm"))
         .setCta()
         .onClick(async () => {
           await this.confirm();
@@ -84,7 +85,7 @@ export class RenameImageModal extends Modal {
 
     // Delete button (on the left)
     const deleteButton = document.createElement("button");
-    deleteButton.textContent = "Delete";
+    deleteButton.textContent = t("common.delete");
     deleteButton.className = "mod-warning";
     deleteButton.style.cssText = `
       padding: 8px 16px;
@@ -100,7 +101,7 @@ export class RenameImageModal extends Modal {
 
     // Keep button (on the right, with different color)
     const keepButton = document.createElement("button");
-    keepButton.textContent = "Keep";
+    keepButton.textContent = t("common.keep");
     keepButton.className = "mod-cta";
     keepButton.style.cssText = `
       padding: 8px 16px;

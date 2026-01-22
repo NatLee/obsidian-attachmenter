@@ -4,6 +4,7 @@ import {
   TextFileView,
   Vault,
 } from "obsidian";
+import { t } from "../i18n/index";
 
 export class PasteImageDeleteModal extends Modal {
   constructor(
@@ -26,7 +27,7 @@ export class PasteImageDeleteModal extends Modal {
     // Header
     const header = contentEl.createDiv({ cls: "attachmenter-modal-header" });
     header.createEl("h2", { 
-      text: "Image Pasted",
+      text: t("pasteImage.pastedTitle"),
       cls: "attachmenter-modal-title"
     });
 
@@ -39,7 +40,7 @@ export class PasteImageDeleteModal extends Modal {
     const img = previewContainer.createEl("img", {
       attr: {
         src: this.vault.getResourcePath(this.file),
-        alt: "Pasted image preview",
+        alt: t("pasteImage.previewAlt"),
       },
       cls: "attachmenter-preview-image",
     });
@@ -52,13 +53,13 @@ export class PasteImageDeleteModal extends Modal {
     const fileName = infoContainer.createDiv({ 
       cls: "attachmenter-file-name" 
     });
-    fileName.createEl("strong", { text: "File: " });
+    fileName.createEl("strong", { text: t("common.file") + ": " });
     fileName.createEl("span", { text: this.file.name });
 
     const filePath = infoContainer.createDiv({ 
       cls: "attachmenter-file-path" 
     });
-    filePath.createEl("strong", { text: "Path: " });
+    filePath.createEl("strong", { text: t("common.path") + ": " });
     filePath.createEl("span", { text: this.file.path });
 
     // Action buttons
@@ -67,12 +68,12 @@ export class PasteImageDeleteModal extends Modal {
     });
 
     const keepButton = buttonContainer.createEl("button", {
-      text: "Keep Image",
+      text: t("pasteImage.keepImage"),
       cls: "mod-cta",
     });
 
     const deleteButton = buttonContainer.createEl("button", {
-      text: "Delete",
+      text: t("common.delete"),
       cls: "mod-warning",
     });
 

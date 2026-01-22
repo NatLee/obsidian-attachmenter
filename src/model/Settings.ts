@@ -1,4 +1,8 @@
+import type { SupportedLanguage } from "../i18n/index";
+
 export interface AttachmenterSettings {
+  /** Interface language. */
+  language: SupportedLanguage;
   /** Use simple per-note folder mode or advanced templated mode. */
   simpleMode: boolean;
   /** Suffix for per-note attachment folder in simple mode, e.g. `_Attachments`. */
@@ -18,6 +22,7 @@ export interface AttachmenterSettings {
 }
 
 export const DEFAULT_SETTINGS: AttachmenterSettings = {
+  language: "en",
   simpleMode: true,
   defaultFolderSuffix: "_Attachments",
   defaultNameFormat: "{notename}-{date}",
