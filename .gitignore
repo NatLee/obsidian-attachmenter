@@ -1,0 +1,31 @@
+# IDE
+.vscode
+.idea
+*.iml
+
+# npm
+node_modules
+package-lock.json
+
+# Build output
+# Don't include the compiled main.js file in the repo.
+# They should be uploaded to GitHub releases instead.
+main.js
+*.map
+
+# Obsidian plugin data
+data.json
+
+# macOS
+.DS_Store
+
+# Local history
+.history
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
