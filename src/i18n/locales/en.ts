@@ -45,7 +45,7 @@ export const en: TranslationMap = {
     },
     aeroFolder: {
       name: "Aero folder style",
-      desc: "Apply Aero (semi-transparent) style to attachment folders."
+      desc: "Apply aero (semi-transparent) style to attachment folders."
     },
     autoRenameFolder: {
       name: "Auto rename folder",
@@ -102,7 +102,7 @@ export const en: TranslationMap = {
     missingFolders: "Missing folders: {count}",
     nameMismatches: "Name mismatches: {count}",
     invalidChars: "Files with invalid characters: {count}",
-    allValid: "✓ All paths are valid",
+    allValid: "All paths are valid.",
     issuesFound: "Issues found",
     missingFoldersTitle: "Missing folders",
     nameMismatchesTitle: "Name mismatches",
