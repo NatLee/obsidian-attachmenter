@@ -41,6 +41,12 @@ Thank you to both original authors for their excellent work! This plugin aims to
   - Command palette support
 - **AERO Style**: Apply semi-transparent styling to attachment folders for a cleaner look
 
+### Paste Image Management
+- **Automatic Organization**: Pasted images are automatically moved to the correct attachment folder and renamed
+- **Delete Option**: After pasting an image, a notification appears with a "Delete" button to remove the image if you change your mind
+  - Prevents unwanted image files from being created
+  - Automatically removes the image link from your note when deleted
+
 ### Simple & Advanced Modes
 - **Simple Mode** (Default): Easy-to-use per-note folder structure with simple naming patterns
 - **Advanced Mode** (Planned): Full template system with variables like `${notepath}`, `${notename}`, `${date}`, etc.
@@ -84,6 +90,20 @@ The plugin will:
 1. Open your Canvas file.
 2. Open the Command Palette (`Ctrl/Cmd + P`).
 3. Run the command `Download remote images in active file`.
+
+### Paste Images
+
+When you paste an image into a note:
+
+1. The image is automatically moved to the note's attachment folder
+2. The image is renamed based on your naming pattern (e.g., `MyNote-202310271030.png`)
+3. A notification appears with a **"Delete"** button
+4. If you change your mind, click **"Delete"** to:
+   - Remove the image file from your vault
+   - Remove the image link from your note
+   - Prevent unwanted files from being created
+
+This feature works for both Markdown notes and Canvas files.
 
 ### Toggle Folder Visibility
 

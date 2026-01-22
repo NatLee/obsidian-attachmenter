@@ -1,5 +1,6 @@
 import {
   FileManager,
+  Notice,
   normalizePath,
   TAbstractFile,
   TFile,
@@ -79,9 +80,15 @@ export class PasteImageHandler {
     }
 
     if (activeFile.extension === "md") {
-      await this._rename4MD(file, newPath, activeView, activeFile);
+      const result = await this._rename4MD(file, newPath, activeView, activeFile);
+      if (result) {
+        this._showDeleteOption(result.file, result.linkText, activeView, activeFile);
+      }
     } else if (activeFile.extension === "canvas") {
-      await this._rename4Canvas(file, newPath, activeView, activeFile);
+      const result = await this._rename4Canvas(file, newPath, activeView, activeFile);
+      if (result) {
+        this._showDeleteOption(result.file, result.filePath, activeView, activeFile);
+      }
     }
   }
 
@@ -90,7 +97,7 @@ export class PasteImageHandler {
     newPath: string,
     activeView: TextFileView,
     activeFile: TFile
-  ) {
+  ): Promise<{ file: TFile; linkText: string } | null> {
     try {
       // 先原地移动一次文件，否则当 newLinkFormat 设置为 shortest 时，generateMarkdownLink 生成的 oldLinkText 不正确
       // https://github.com/chenfeicqq/obsidian-attachment-manager/issues/4
@@ -111,8 +118,16 @@ export class PasteImageHandler {
       let content = activeView.getViewData();
       content = content.replace(oldLinkText, newLinkText);
       activeView.setViewData(content, false);
+
+      // 获取重命名后的文件
+      const renamedFile = this.vault.getAbstractFileByPath(newPath);
+      if (renamedFile instanceof TFile) {
+        return { file: renamedFile, linkText: newLinkText };
+      }
+      return null;
     } catch (error) {
       console.error("Error renaming pasted image for MD:", error);
+      return null;
     }
   }
 
@@ -121,7 +136,7 @@ export class PasteImageHandler {
     newPath: string,
     activeView: TextFileView,
     activeFile: TFile
-  ) {
+  ): Promise<{ file: TFile; filePath: string } | null> {
     try {
       const oldPath = file.path;
       await this.fileManager.renameFile(file, newPath);
@@ -145,8 +160,68 @@ export class PasteImageHandler {
         );
       }
       activeView.setViewData(content, false);
+
+      // 获取重命名后的文件
+      const renamedFile = this.vault.getAbstractFileByPath(newPath);
+      if (renamedFile instanceof TFile) {
+        return { file: renamedFile, filePath: newPath };
+      }
+      return null;
     } catch (error) {
       console.error("Error renaming pasted image for Canvas:", error);
+      return null;
     }
+  }
+
+  private _showDeleteOption(
+    file: TFile,
+    linkTextOrPath: string,
+    activeView: TextFileView,
+    activeFile: TFile
+  ) {
+    const notice = new Notice("", 10000); // 10 seconds timeout
+    notice.noticeEl.createDiv({ text: "Image pasted. Delete it?" });
+    
+    const buttonContainer = notice.noticeEl.createDiv();
+    const deleteButton = buttonContainer.createEl("button", {
+      text: "Delete",
+      cls: "mod-cta",
+    });
+
+    deleteButton.onclick = async () => {
+      notice.hide();
+      
+      try {
+        // Remove the link from the document first
+        let content = activeView.getViewData();
+        
+        if (activeFile.extension === "md") {
+          // For markdown, remove the image link
+          // Handle both single-line and multi-line cases
+          const lines = content.split("\n");
+          const newLines = lines.filter((line) => !line.includes(linkTextOrPath));
+          content = newLines.join("\n");
+        } else if (activeFile.extension === "canvas") {
+          // For canvas, remove the node with this file
+          const data = JSON.parse(content) as { nodes?: Array<{ type?: string; file?: string; id?: string }> };
+          if (Array.isArray(data.nodes)) {
+            data.nodes = data.nodes.filter((node) => {
+              return !(node.type === "file" && node.file === linkTextOrPath);
+            });
+            content = JSON.stringify(data, null, "\t");
+          }
+        }
+        
+        activeView.setViewData(content, false);
+
+        // Delete the file
+        await this.fileManager.trashFile(file);
+        
+        new Notice("Image deleted");
+      } catch (error) {
+        console.error("Error deleting pasted image:", error);
+        new Notice("Failed to delete image");
+      }
+    };
   }
 }
