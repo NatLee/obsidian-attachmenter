@@ -28,7 +28,8 @@ export class PasteImageManagerModal extends Modal {
   private originalPath: string;
   private pathResolver: PathResolver;
   private isDeleting: boolean = false;
-  private actionsPanelContainer: HTMLElement | null = null;
+  private footerContainer: HTMLElement | null = null;
+  private warningContainer: HTMLElement | null = null;
 
   constructor(
     app: App,
@@ -69,26 +70,15 @@ export class PasteImageManagerModal extends Modal {
     });
     this._renderSinglePageLayout(layoutContainer);
 
-    // Footer buttons
-    const footer = contentEl.createDiv({ cls: "attachmenter-modal-footer" });
-    const keepButton = footer.createEl("button", {
-      text: t("common.keep"),
-      cls: "mod-cta",
-    });
-    keepButton.onclick = () => {
-      this.close();
-    };
-
-    // Set focus on Keep button by default
-    keepButton.focus();
+    // Footer
+    this.footerContainer = contentEl.createDiv({ cls: "attachmenter-modal-footer" });
+    this.updateUi();
 
     // Add ESC key support for canceling delete confirmation
-    this.scope.register(["Escape"], (evt) => {
+    this.scope.register([], "Escape", (evt) => {
       if (this.isDeleting) {
         this.isDeleting = false;
-        if (this.actionsPanelContainer) {
-          this._renderActionsPanel(this.actionsPanelContainer);
-        }
+        this.updateUi();
         return false; // Prevent default behavior (closing modal)
       }
       // Let default ESC behavior work for closing modal when not in delete confirmation
@@ -136,18 +126,17 @@ export class PasteImageManagerModal extends Modal {
     filePath.createEl("strong", { text: t("common.path") + ": " });
     filePath.createEl("span", { text: this.file.path });
 
-    // Path section (full width)
+    // Path section (full width) - Manual path editing remains
     const pathSection = container.createDiv({
       cls: "attachmenter-path-section",
     });
     this._renderPathPanel(pathSection);
 
-    // Actions section (full width)
-    const actionsSection = container.createDiv({
-      cls: "attachmenter-actions-section",
+    // Warning section (placeholder for delete warning)
+    this.warningContainer = container.createDiv({
+      cls: "attachmenter-delete-warning-container",
     });
-    this.actionsPanelContainer = actionsSection;
-    this._renderActionsPanel(actionsSection);
+    this.updateWarning();
   }
 
   private _renderPathPanel(container: HTMLElement) {
@@ -194,15 +183,19 @@ export class PasteImageManagerModal extends Modal {
       cls: "attachmenter-suggested-item",
     });
     suggestedItem.createEl("code", { text: suggestedFullPath });
+    
+    // "Use" button just fills the input, it does not execute a move (Quick Move removed)
     const useSuggestedBtn = suggestedItem.createEl("button", {
       text: t("pasteImage.use"),
       cls: "mod-small",
     });
     useSuggestedBtn.onclick = () => {
-      newPathSetting.settingEl.querySelector("input")?.setValue(
-        suggestedFullPath
-      );
-      this.currentPath = suggestedFullPath;
+      const input = newPathSetting.settingEl.querySelector("input");
+      if (input) {
+        input.value = suggestedFullPath;
+        // Trigger generic update since onchange might not fire
+        this.currentPath = suggestedFullPath;
+      }
     };
 
     // Apply button
@@ -226,134 +219,86 @@ export class PasteImageManagerModal extends Modal {
     };
   }
 
-  private _renderActionsPanel(container: HTMLElement) {
-    // Clear container first
-    container.empty();
-    
+  private updateUi() {
+    this.updateFooter();
+    this.updateWarning();
+  }
+
+  private updateFooter() {
+    if (!this.footerContainer) return;
+    this.footerContainer.empty();
+
     if (this.isDeleting) {
-      this._renderDeleteConfirmation(container);
+      // Delete Confirmation State: [Confirm Delete] [Cancel]
+      const confirmBtn = this.footerContainer.createEl("button", {
+        text: t("pasteImage.confirmDelete"),
+        cls: "mod-warning",
+      });
+      confirmBtn.onclick = async () => {
+        try {
+          await this.onDelete(this.folderPath);
+          this.close();
+        } catch (error) {
+          console.error("Error deleting image:", error);
+          new Notice(t("notices.imageDeleteFailed"));
+          this.isDeleting = false;
+          this.updateUi();
+        }
+      };
+
+      const cancelBtn = this.footerContainer.createEl("button", {
+        text: t("common.cancel"),
+        cls: "mod-cta",
+      });
+      cancelBtn.onclick = () => {
+        this.isDeleting = false;
+        this.updateUi();
+      };
+
+      cancelBtn.focus();
+
     } else {
-      this._renderNormalActions(container);
+      // Normal State: [Delete] [Keep]
+      // Delete is placed first (left)
+      const deleteBtn = this.footerContainer.createEl("button", {
+        text: t("pasteImage.delete"),
+        cls: "mod-warning",
+      });
+      deleteBtn.onclick = () => {
+        this.isDeleting = true;
+        this.updateUi();
+      };
+
+      const keepBtn = this.footerContainer.createEl("button", {
+        text: t("common.keep"),
+        cls: "mod-cta",
+      });
+      keepBtn.onclick = () => {
+        this.close();
+      };
+
+      keepBtn.focus();
     }
   }
 
-  private _renderNormalActions(container: HTMLElement) {
-    container.createEl("p", {
-      text: t("pasteImage.availableActions"),
-      cls: "attachmenter-description",
-    });
+  private updateWarning() {
+    if (!this.warningContainer) return;
+    this.warningContainer.empty();
 
-    // Delete button
-    const deleteContainer = container.createDiv({
-      cls: "attachmenter-action-item",
-    });
-    deleteContainer.createEl("div", {
-      cls: "attachmenter-action-info",
-    }).createEl("strong", { text: t("pasteImage.deleteImage") });
-    deleteContainer
-      .createEl("div", {
-        cls: "attachmenter-action-desc",
-      })
-      .createEl("p", {
-        text: t("pasteImage.deleteImageDesc"),
+    // Only show warning text if in deleting state
+    if (this.isDeleting) {
+      const warningBox = this.warningContainer.createDiv({
+        cls: "attachmenter-delete-warning",
       });
-
-    const deleteButton = deleteContainer.createEl("button", {
-      text: t("pasteImage.delete"),
-      cls: "mod-warning",
-    });
-    deleteButton.onclick = () => {
-      this.isDeleting = true;
-      if (this.actionsPanelContainer) {
-        this._renderActionsPanel(this.actionsPanelContainer);
-      }
-    };
-
-    // Move to attachment folder button
-    const moveContainer = container.createDiv({
-      cls: "attachmenter-action-item",
-    });
-    moveContainer
-      .createEl("div", { cls: "attachmenter-action-info" })
-      .createEl("strong", { text: t("pasteImage.moveToFolder") });
-    moveContainer
-      .createEl("div", { cls: "attachmenter-action-desc" })
-      .createEl("p", {
-        text: t("pasteImage.moveToFolderDesc"),
+      warningBox.createEl("p", {
+        text: t("pasteImage.deleteConfirm"),
+        cls: "attachmenter-warning-text",
       });
-
-    const moveButton = moveContainer.createEl("button", {
-      text: t("pasteImage.move"),
-      cls: "mod-cta",
-    });
-    moveButton.onclick = async () => {
-      const suggestedPath = this.pathResolver.getAttachmentFolderForNote(
-        this.activeFile
-      );
-      const newPath = normalizePath(join(suggestedPath, this.file.name));
-      try {
-        await this.onRename(newPath);
-        this.currentPath = newPath;
-        this.originalPath = newPath;
-        new Notice(t("notices.imageMoved"));
-      } catch (error) {
-        console.error("Error moving image:", error);
-        new Notice(t("notices.imageMoveFailed"));
-      }
-    };
-  }
-
-  private _renderDeleteConfirmation(container: HTMLElement) {
-    // Warning message
-    const warningContainer = container.createDiv({
-      cls: "attachmenter-delete-warning",
-    });
-    warningContainer.createEl("p", {
-      text: t("pasteImage.deleteConfirm"),
-      cls: "attachmenter-warning-text",
-    });
-    warningContainer.createEl("p", {
-      text: t("pasteImage.deleteConfirmDesc"),
-      cls: "attachmenter-warning-detail",
-    });
-
-    // Button container
-    const buttonContainer = container.createDiv({
-      cls: "attachmenter-delete-buttons",
-    });
-
-    const cancelButton = buttonContainer.createEl("button", {
-      text: t("common.cancel"),
-      cls: "mod-cta",
-    });
-    cancelButton.onclick = () => {
-      this.isDeleting = false;
-      if (this.actionsPanelContainer) {
-        this._renderActionsPanel(this.actionsPanelContainer);
-      }
-    };
-
-    const confirmButton = buttonContainer.createEl("button", {
-      text: t("pasteImage.confirmDelete"),
-      cls: "mod-warning",
-    });
-    confirmButton.onclick = async () => {
-      try {
-        await this.onDelete(this.folderPath);
-        this.close();
-      } catch (error) {
-        console.error("Error deleting image:", error);
-        new Notice(t("notices.imageDeleteFailed"));
-        // Reset to normal state on error
-        this.isDeleting = false;
-        if (this.actionsPanelContainer) {
-          this._renderActionsPanel(this.actionsPanelContainer);
-        }
-      }
-    };
-
-    // Set focus on cancel button by default for safety
-    cancelButton.focus();
+      warningBox.createEl("p", {
+        text: t("pasteImage.deleteConfirmDesc"),
+        cls: "attachmenter-warning-detail",
+      });
+    }
   }
 
   onClose() {
