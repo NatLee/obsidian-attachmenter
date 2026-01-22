@@ -230,18 +230,18 @@ export class PathCheckModal extends Modal {
    * Prompt user to rename an image file.
    * @param imageFile - The image file to rename
    * @param defaultBaseName - Default base name (without extension)
-   * @returns The new base name, 'keep' to use original name, or null if user cancelled/deleted
+   * @returns The new base name (or the string "keep" to use original name), or null if user cancelled/deleted
    */
   private async promptForImageName(
     imageFile: TFile,
     defaultBaseName: string
-  ): Promise<string | "keep" | null> {
+  ): Promise<string | null> {
     return new Promise((resolve) => {
       const modal = new RenameImageModal(
         this.app,
         imageFile,
         defaultBaseName,
-        async (newName: string) => {
+        (newName: string) => {
           resolve(newName);
         },
         async () => {

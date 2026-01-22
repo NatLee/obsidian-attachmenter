@@ -6,9 +6,7 @@ import {
   normalizePath,
   Setting,
   TFile,
-  TextFileView,
   Vault,
-  Workspace,
 } from "obsidian";
 
 import type { AttachmenterSettings } from "../model/Settings";
@@ -35,10 +33,10 @@ export class PasteImageManagerModal extends Modal {
     app: App,
     private vault: Vault,
     private fileManager: FileManager,
-    private workspace: Workspace,
+    private _workspace: Workspace,
     private file: TFile,
-    private linkTextOrPath: string,
-    private activeView: TextFileView,
+    private _linkTextOrPath: string,
+    private _activeView: TextFileView,
     private activeFile: TFile,
     private folderPath: string,
     private settings: AttachmenterSettings,

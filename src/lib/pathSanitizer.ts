@@ -45,7 +45,8 @@ export class PathSanitizer {
     // Windows doesn't allow leading/trailing dots or spaces in filenames
     sanitized = sanitized.replace(/^[\s.]+|[\s.]+$/g, "");
 
-    // Remove any remaining control characters
+    // Remove any remaining control characters (C0 and DEL control characters)
+    // eslint-disable-next-line no-control-regex
     sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, "");
 
     // Ensure name is not empty after sanitization
@@ -75,6 +76,8 @@ export class PathSanitizer {
     if (!name) return [];
 
     const invalid: string[] = [];
+    // Pattern includes control characters (C0 and DEL) which are invalid in filenames
+    // eslint-disable-next-line no-control-regex
     const allInvalidPattern = /[<>:"/\\|?*#\0\x00-\x1F\x7F]/g;
     let match;
 

@@ -1,4 +1,5 @@
 import {
+  App,
   Modal,
   TFile,
   TextFileView,
@@ -8,7 +9,7 @@ import { t } from "../i18n/index";
 
 export class PasteImageDeleteModal extends Modal {
   constructor(
-    app: any,
+    app: App,
     private vault: Vault,
     private file: TFile,
     private linkTextOrPath: string,

@@ -37,6 +37,13 @@ const IMAGE_CONTENT_TYPES: Record<string, string> = {
   "image/webp": "webp",
 };
 
+interface CanvasNode {
+  type?: string;
+  url?: string;
+  file?: string;
+  id?: string;
+}
+
 export class RemoteImageService {
   private pathResolver: PathResolver;
   private nameResolver: NameResolver;
@@ -204,7 +211,7 @@ export class RemoteImageService {
       let time = moment();
       const tasks: Promise<boolean>[] = [];
 
-      data.nodes.forEach((node: any) => {
+      data.nodes.forEach((node: CanvasNode) => {
         time = time.add(1, "m");
         const baseName = this.nameResolver.buildBaseName(note, time);
         const imagePath = join(folderPath, baseName);
@@ -262,7 +269,7 @@ export class RemoteImageService {
     }
   }
 
-  private async downloadForCanvas(node: any, imagePath: string): Promise<boolean> {
+  private async downloadForCanvas(node: CanvasNode, imagePath: string): Promise<boolean> {
     if (node.type !== "link" || !node.url) return false;
     const downloaded = await this.download(node.url, imagePath);
     if (!(downloaded instanceof TFile)) return false;
@@ -344,7 +351,7 @@ export class RemoteImageService {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       
-      // Use arrayBuffer directly, not response.arrayBuffer (which might be a getter)
+      // response.arrayBuffer is a Promise property in Obsidian's requestUrl response
       const arrayBuffer = await response.arrayBuffer;
       
       const file = await this.vault.createBinary(fullPath, arrayBuffer);

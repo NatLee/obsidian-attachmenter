@@ -2,7 +2,6 @@ import { setIcon } from "obsidian";
 
 import type AttachmenterPlugin from "../../main";
 import type { AttachmenterSettings } from "../model/Settings";
-import { PathSanitizer } from "../lib/pathSanitizer";
 
 /**
  * Builds a regex pattern to match attachment folder names based on settings.
