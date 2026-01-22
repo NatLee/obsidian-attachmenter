@@ -1,8 +1,6 @@
 import {
   Plugin,
-  TAbstractFile,
   TFile,
-  WorkspaceLeaf,
 } from "obsidian";
 
 import { AttachmenterSettings, DEFAULT_SETTINGS } from "./src/model/Settings";
@@ -32,7 +30,7 @@ export default class AttachmenterPlugin extends Plugin {
     this.addSettingTab(new AttachmenterSettingTab(this.app, this));
 
     this.addCommand({
-      id: "attachmenter-download-remote-images-active",
+      id: "download-remote-images-active",
       name: "Download remote images in active file",
       callback: async () => {
         await this.remoteImageService.downloadForActiveFile();

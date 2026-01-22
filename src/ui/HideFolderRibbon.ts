@@ -51,7 +51,7 @@ export class HideFolderRibbon {
 
     // Add command
     this.plugin.addCommand({
-      id: "attachmenter-toggle-folder-visibility",
+      id: "toggle-folder-visibility",
       name: "Toggle attachment folder visibility",
       callback: () => {
         this.plugin.settings.hideFolder = !this.plugin.settings.hideFolder;
