@@ -7,11 +7,13 @@ import { AttachmenterSettings, DEFAULT_SETTINGS } from "./src/model/Settings";
 import { RemoteImageService } from "./src/core/RemoteImageService";
 import { AttachmenterSettingTab } from "./src/ui/SettingTab";
 import { HideFolderRibbon } from "./src/ui/HideFolderRibbon";
+import { PasteImageHandler } from "./src/handler/PasteImageHandler";
 
 export default class AttachmenterPlugin extends Plugin {
   settings: AttachmenterSettings;
   remoteImageService: RemoteImageService;
   hideFolderRibbon: HideFolderRibbon;
+  pasteImageHandler: PasteImageHandler;
 
   async onload() {
     await this.loadSettings();
@@ -21,6 +23,13 @@ export default class AttachmenterPlugin extends Plugin {
       this.app.workspace,
       this.app.fileManager,
       this.app.vault.adapter,
+      this.settings
+    );
+
+    this.pasteImageHandler = new PasteImageHandler(
+      this.app.vault,
+      this.app.workspace,
+      this.app.fileManager,
       this.settings
     );
 
@@ -50,6 +59,13 @@ export default class AttachmenterPlugin extends Plugin {
               await this.remoteImageService.downloadForFile(file);
             });
         });
+      })
+    );
+
+    // Register file creation event to handle pasted images
+    this.registerEvent(
+      this.app.vault.on("create", (file) => {
+        this.pasteImageHandler.handle(file);
       })
     );
   }
