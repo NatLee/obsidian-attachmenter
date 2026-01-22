@@ -54,7 +54,7 @@ export class PasteImageManagerModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    // Header with navigation
+    // Header
     const header = contentEl.createDiv({ cls: "attachmenter-modal-header" });
     const titleRow = header.createDiv({ cls: "attachmenter-title-row" });
     titleRow.createEl("h2", {
@@ -62,60 +62,11 @@ export class PasteImageManagerModal extends Modal {
       cls: "attachmenter-modal-title",
     });
 
-    // Navigation tabs
-    const navContainer = header.createDiv({ cls: "attachmenter-nav-container" });
-    const navTabs = navContainer.createDiv({ cls: "attachmenter-nav-tabs" });
-
-    const previewTab = navTabs.createEl("button", {
-      text: "Preview",
-      cls: "attachmenter-nav-tab active",
+    // Single page layout container
+    const layoutContainer = contentEl.createDiv({
+      cls: "attachmenter-single-page-layout",
     });
-    const pathTab = navTabs.createEl("button", {
-      text: "Path",
-      cls: "attachmenter-nav-tab",
-    });
-    const actionsTab = navTabs.createEl("button", {
-      text: "Actions",
-      cls: "attachmenter-nav-tab",
-    });
-
-    // Content area
-    const contentArea = contentEl.createDiv({ cls: "attachmenter-content-area" });
-
-    // Preview panel
-    const previewPanel = contentArea.createDiv({
-      cls: "attachmenter-panel active",
-      attr: { "data-panel": "preview" },
-    });
-    this._renderPreviewPanel(previewPanel);
-
-    // Path panel
-    const pathPanel = contentArea.createDiv({
-      cls: "attachmenter-panel",
-      attr: { "data-panel": "path" },
-    });
-    this._renderPathPanel(pathPanel);
-
-    // Actions panel
-    const actionsPanel = contentArea.createDiv({
-      cls: "attachmenter-panel",
-      attr: { "data-panel": "actions" },
-    });
-    this.actionsPanelContainer = actionsPanel;
-    this._renderActionsPanel(actionsPanel);
-
-    // Tab switching
-    const tabs = [previewTab, pathTab, actionsTab];
-    const panels = [previewPanel, pathPanel, actionsPanel];
-
-    tabs.forEach((tab, index) => {
-      tab.onclick = () => {
-        tabs.forEach((t) => t.classList.remove("active"));
-        panels.forEach((p) => p.classList.remove("active"));
-        tab.classList.add("active");
-        panels[index].classList.add("active");
-      };
-    });
+    this._renderSinglePageLayout(layoutContainer);
 
     // Footer buttons
     const footer = contentEl.createDiv({ cls: "attachmenter-modal-footer" });
@@ -144,12 +95,19 @@ export class PasteImageManagerModal extends Modal {
     });
   }
 
-  private _renderPreviewPanel(container: HTMLElement) {
-    // Image preview
-    const previewContainer = container.createDiv({
-      cls: "attachmenter-modal-preview",
+  private _renderSinglePageLayout(container: HTMLElement) {
+    // Top section: Preview and Info (two columns)
+    const topSection = container.createDiv({
+      cls: "attachmenter-top-section",
     });
 
+    // Preview section (left)
+    const previewSection = topSection.createDiv({
+      cls: "attachmenter-preview-section",
+    });
+    const previewContainer = previewSection.createDiv({
+      cls: "attachmenter-modal-preview",
+    });
     const img = previewContainer.createEl("img", {
       attr: {
         src: this.vault.getResourcePath(this.file),
@@ -158,11 +116,13 @@ export class PasteImageManagerModal extends Modal {
       cls: "attachmenter-preview-image",
     });
 
-    // Image info
-    const infoContainer = container.createDiv({
+    // Info section (right)
+    const infoSection = topSection.createDiv({
+      cls: "attachmenter-info-section",
+    });
+    const infoContainer = infoSection.createDiv({
       cls: "attachmenter-modal-info",
     });
-
     const fileName = infoContainer.createDiv({
       cls: "attachmenter-file-name",
     });
@@ -174,6 +134,19 @@ export class PasteImageManagerModal extends Modal {
     });
     filePath.createEl("strong", { text: "Path: " });
     filePath.createEl("span", { text: this.file.path });
+
+    // Path section (full width)
+    const pathSection = container.createDiv({
+      cls: "attachmenter-path-section",
+    });
+    this._renderPathPanel(pathSection);
+
+    // Actions section (full width)
+    const actionsSection = container.createDiv({
+      cls: "attachmenter-actions-section",
+    });
+    this.actionsPanelContainer = actionsSection;
+    this._renderActionsPanel(actionsSection);
   }
 
   private _renderPathPanel(container: HTMLElement) {
