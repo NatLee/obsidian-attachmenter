@@ -185,6 +185,7 @@ export class PasteImageHandler {
   ) {
     const modal = new PasteImageDeleteModal(
       this.app,
+      this.vault,
       file,
       linkTextOrPath,
       activeView,

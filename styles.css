@@ -9,3 +9,104 @@
 .attachmenter-aero-folder:hover {
   opacity: 1;
 }
+
+/* Paste Image Modal Styles */
+.attachmenter-paste-modal .modal-content {
+  max-width: 500px;
+}
+
+.attachmenter-modal-header {
+  margin-bottom: 1.5em;
+  text-align: center;
+}
+
+.attachmenter-modal-title {
+  margin: 0;
+  font-size: 1.5em;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.attachmenter-modal-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1.5em 0;
+  padding: 1em;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  min-height: 200px;
+  max-height: 400px;
+  overflow: hidden;
+}
+
+.attachmenter-preview-image {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.attachmenter-modal-info {
+  margin: 1.5em 0;
+  padding: 1em;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  font-size: 0.9em;
+}
+
+.attachmenter-file-name,
+.attachmenter-file-path {
+  margin: 0.5em 0;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+.attachmenter-file-name strong,
+.attachmenter-file-path strong {
+  color: var(--text-muted);
+  margin-right: 0.5em;
+}
+
+.attachmenter-file-name span,
+.attachmenter-file-path span {
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.attachmenter-modal-buttons {
+  display: flex;
+  gap: 0.75em;
+  justify-content: flex-end;
+  margin-top: 1.5em;
+  padding-top: 1em;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.attachmenter-modal-buttons button {
+  min-width: 100px;
+  padding: 0.6em 1.2em;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.attachmenter-modal-buttons button.mod-warning {
+  background-color: var(--background-modifier-error);
+  color: var(--text-on-accent);
+}
+
+.attachmenter-modal-buttons button.mod-warning:hover {
+  background-color: var(--background-modifier-error-hover);
+}
+
+.attachmenter-modal-buttons button.mod-cta {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.attachmenter-modal-buttons button.mod-cta:hover {
+  background-color: var(--interactive-accent-hover);
+}
