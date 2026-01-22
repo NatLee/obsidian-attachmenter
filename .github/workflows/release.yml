@@ -58,6 +58,38 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Release tag: $TAG"
 
+      - name: Delete existing release assets
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.release_tag.outputs.tag }}';
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const release = releases.find(r => r.tag_name === tag);
+            if (release) {
+              const { data: assets } = await github.rest.repos.listReleaseAssets({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+              });
+              
+              for (const asset of assets) {
+                if (['main.js', 'manifest.json', 'styles.css'].includes(asset.name)) {
+                  console.log(`Deleting existing asset: ${asset.name}`);
+                  await github.rest.repos.deleteReleaseAsset({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    asset_id: asset.id,
+                  });
+                }
+              }
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
         with:
