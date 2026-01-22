@@ -5,6 +5,7 @@ import {
   Setting,
 } from "obsidian";
 import type AttachmenterPlugin from "../../main";
+import { PathCheckModal } from "./PathCheckModal";
 
 export class AttachmenterSettingTab extends PluginSettingTab {
   plugin: AttachmenterPlugin;
@@ -121,6 +122,28 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.autoRenameFolder = value;
             await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Path validation")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName("Check attachment folder paths")
+      .setDesc("Validate all attachment folder paths and check for issues (invalid characters, missing folders, name mismatches).")
+      .addButton((button) =>
+        button
+          .setButtonText("Check Paths")
+          .setCta()
+          .onClick(() => {
+            const modal = new PathCheckModal(
+              this.app,
+              this.app.vault,
+              this.app.fileManager,
+              this.plugin.settings
+            );
+            modal.open();
           })
       );
   }

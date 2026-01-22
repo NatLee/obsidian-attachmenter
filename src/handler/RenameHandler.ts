@@ -9,6 +9,7 @@ import {
 
 import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
+import { PathSanitizer } from "../lib/pathSanitizer";
 
 // Simple path utilities for browser environment
 function dirname(path: string): string {
@@ -62,11 +63,16 @@ export class RenameHandler {
     const pathResolver = new PathResolver(this.vault, settings);
 
     // Calculate old and new attachment folder paths
+    // Note: Old path calculation should also use sanitization for consistency
     const oldFileDir = dirname(oldPath);
     const oldFileBasename = basename(oldPath).replace(/\.[^/.]+$/, ""); // Remove extension
-    const oldFolderName = `${oldFileBasename}${settings.defaultFolderSuffix}`;
+    // Sanitize the old basename and suffix to match how folders were created
+    const sanitizedOldBasename = PathSanitizer.sanitizeFolderName(oldFileBasename);
+    const sanitizedOldSuffix = PathSanitizer.sanitizeFolderName(settings.defaultFolderSuffix);
+    const oldFolderName = `${sanitizedOldBasename}${sanitizedOldSuffix}`;
     const oldFolderPath = normalizePath(join(oldFileDir, oldFolderName));
 
+    // New folder path is already sanitized by PathResolver
     const newFolderPath = pathResolver.getAttachmentFolderForNote(file);
 
     // If the paths are the same, no need to rename

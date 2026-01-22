@@ -1,6 +1,7 @@
 import { TFile, Vault, normalizePath } from "obsidian";
 
 import type { AttachmenterSettings } from "../model/Settings";
+import { PathSanitizer } from "../lib/pathSanitizer";
 
 // Simple path utilities for browser environment
 function dirname(path: string): string {
@@ -23,11 +24,16 @@ export class PathResolver {
    * Returns the folder path where attachments for a given note should be stored.
    * For now we only implement the simple mode:
    *   <note-dir>/<notename><defaultFolderSuffix>
+   * 
+   * Folder names are sanitized to ensure cross-platform compatibility.
    */
   getAttachmentFolderForNote(note: TFile): string {
     const noteDir = dirname(note.path);
-    const notename = note.basename;
-    const folderName = `${notename}${this.settings.defaultFolderSuffix}`;
+    // Sanitize the note name to handle invalid characters (e.g., #)
+    const sanitizedNotename = PathSanitizer.sanitizeFolderName(note.basename);
+    // Sanitize the folder suffix as well in case it contains invalid chars
+    const sanitizedSuffix = PathSanitizer.sanitizeFolderName(this.settings.defaultFolderSuffix);
+    const folderName = `${sanitizedNotename}${sanitizedSuffix}`;
     let folderPath = join(noteDir, folderName);
     // Remove leading ./ if present
     if (folderPath.startsWith("./")) {

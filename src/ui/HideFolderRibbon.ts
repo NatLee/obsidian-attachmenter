@@ -2,9 +2,11 @@ import { setIcon } from "obsidian";
 
 import type AttachmenterPlugin from "../../main";
 import type { AttachmenterSettings } from "../model/Settings";
+import { PathSanitizer } from "../lib/pathSanitizer";
 
 /**
  * Builds a regex pattern to match attachment folder names based on settings.
+ * Accounts for sanitized folder names (e.g., # replaced with space).
  */
 function buildFolderRegExp(settings: AttachmenterSettings): RegExp {
   // Escape special regex characters
@@ -12,6 +14,8 @@ function buildFolderRegExp(settings: AttachmenterSettings): RegExp {
   const reg = new RegExp("[" + specialChars.join("") + "]", "gi");
   
   // Get the folder suffix (e.g., "_Attachments")
+  // Note: We use the original suffix for matching, but folders may have been created
+  // with sanitized names. The pattern should be flexible enough to match both.
   const folderSuffix = settings.defaultFolderSuffix || "_Attachments";
   
   // Escape the suffix and replace any variable placeholders with .+
@@ -19,6 +23,8 @@ function buildFolderRegExp(settings: AttachmenterSettings): RegExp {
   
   // Match folder names ending with the suffix (e.g., "note_Attachments")
   // The pattern matches: any characters + suffix
+  // Note: Since folder names may be sanitized (e.g., # -> space), we use .+ which
+  // will match any characters, including spaces that replaced invalid chars
   pattern = ".+" + pattern + "$";
   
   return new RegExp(pattern);

@@ -15,6 +15,7 @@ import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
 import { NameResolver } from "../path/NameResolver";
 import { PasteImageManagerModal } from "../ui/PasteImageManagerModal";
+import { PathSanitizer } from "../lib/pathSanitizer";
 
 // Simple path utilities for browser environment
 function join(...parts: string[]): string {
@@ -213,8 +214,23 @@ export class PasteImageHandler {
     try {
       const oldPath = file.path;
       
+      // Sanitize the new path to ensure it's valid
+      const pathParts = newPath.split("/");
+      const fileName = pathParts[pathParts.length - 1];
+      const fileNameParts = fileName.split(".");
+      const fileExtension = fileNameParts.length > 1 ? fileNameParts.pop() : "";
+      const fileBaseName = fileNameParts.join(".");
+      
+      // Sanitize the base name and reconstruct the path
+      const sanitizedBaseName = PathSanitizer.sanitizeFileName(fileBaseName);
+      const sanitizedFileName = fileExtension 
+        ? `${sanitizedBaseName}.${fileExtension}`
+        : sanitizedBaseName;
+      pathParts[pathParts.length - 1] = sanitizedFileName;
+      const sanitizedNewPath = normalizePath(pathParts.join("/"));
+      
       // Ensure parent directory exists
-      const newPathDir = newPath.substring(0, newPath.lastIndexOf("/"));
+      const newPathDir = sanitizedNewPath.substring(0, sanitizedNewPath.lastIndexOf("/"));
       if (!(await this.vault.adapter.exists(newPathDir))) {
         await this.vault.createFolder(newPathDir);
       }
@@ -230,11 +246,11 @@ export class PasteImageHandler {
         );
       }
 
-      // Rename the file
-      await this.fileManager.renameFile(file, newPath);
+      // Rename the file using sanitized path
+      await this.fileManager.renameFile(file, sanitizedNewPath);
 
-      // Get the renamed file
-      const renamedFile = this.vault.getAbstractFileByPath(newPath);
+      // Get the renamed file using sanitized path
+      const renamedFile = this.vault.getAbstractFileByPath(sanitizedNewPath);
       if (!(renamedFile instanceof TFile)) {
         throw new Error("Failed to get renamed file");
       }
@@ -254,7 +270,7 @@ export class PasteImageHandler {
         if (Array.isArray(data.nodes)) {
           data.nodes.forEach((node) => {
             if (node.type === "file" && node.file === oldPath) {
-              node.file = newPath;
+              node.file = sanitizedNewPath;
             }
           });
           content = JSON.stringify(data, null, "\t");
