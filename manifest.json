@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "minAppVersion": "1.0.0",
   "description": "Unified attachment manager for Obsidian notes with flexible paths, naming, and remote image downloading.",
-  "author": "natlee (with AI assistant)",
+  "author": "natlee",
   "authorUrl": "https://github.com/",
   "isDesktopOnly": false
 }
