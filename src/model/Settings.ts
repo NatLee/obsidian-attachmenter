@@ -11,6 +11,8 @@ export interface AttachmenterSettings {
   hideFolder: boolean;
   /** Apply AERO style to attachment folders. */
   aeroFolder: boolean;
+  /** Automatically rename attachment folder when note is renamed. */
+  autoRenameFolder: boolean;
 }
 
 export const DEFAULT_SETTINGS: AttachmenterSettings = {
@@ -20,5 +22,6 @@ export const DEFAULT_SETTINGS: AttachmenterSettings = {
   dateFormat: "YYYYMMDDHHmmssSSS",
   hideFolder: false,
   aeroFolder: true,
+  autoRenameFolder: true,
 };
 

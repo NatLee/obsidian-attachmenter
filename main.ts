@@ -10,6 +10,7 @@ import { HideFolderRibbon } from "./src/ui/HideFolderRibbon";
 import { PasteImageHandler } from "./src/handler/PasteImageHandler";
 import { VaultAttachmentConfiguration } from "./src/components/VaultAttachmentConfiguration";
 import { FileOpenHandler } from "./src/handler/FileOpenHandler";
+import { RenameHandler } from "./src/handler/RenameHandler";
 import { PathResolver } from "./src/path/PathResolver";
 
 export default class AttachmenterPlugin extends Plugin {
@@ -19,6 +20,7 @@ export default class AttachmenterPlugin extends Plugin {
   pasteImageHandler: PasteImageHandler;
   vaultAttachmentConfiguration: VaultAttachmentConfiguration;
   fileOpenHandler: FileOpenHandler;
+  renameHandler: RenameHandler;
 
   async onload() {
     await this.loadSettings();
@@ -50,6 +52,12 @@ export default class AttachmenterPlugin extends Plugin {
     this.fileOpenHandler = new FileOpenHandler(
       this.vaultAttachmentConfiguration,
       pathResolver
+    );
+
+    this.renameHandler = new RenameHandler(
+      this.app.vault,
+      this.app.fileManager,
+      () => this.settings
     );
 
     this.hideFolderRibbon = new HideFolderRibbon(this);
@@ -96,10 +104,12 @@ export default class AttachmenterPlugin extends Plugin {
       })
     );
 
-    // Register file rename event to update attachment path configuration
-    // This ensures the paste image dialog shows the correct path after renaming
+    // Register file rename event to update attachment path configuration and rename folder
     this.registerEvent(
       this.app.vault.on("rename", (file, oldPath) => {
+        // Handle attachment folder renaming
+        void this.renameHandler.handle(file, oldPath);
+        
         // Check if the renamed file is the currently active file
         const activeFile = this.app.workspace.getActiveFile();
         if (activeFile && activeFile.path === file.path) {

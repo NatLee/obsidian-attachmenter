@@ -107,6 +107,22 @@ export class AttachmenterSettingTab extends PluginSettingTab {
             this.plugin.hideFolderRibbon.refresh();
           })
       );
+
+    new Setting(containerEl)
+      .setName("Auto rename folder")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName("Auto rename attachment folder")
+      .setDesc("Automatically rename the attachment folder when the note is renamed.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.autoRenameFolder)
+          .onChange(async (value) => {
+            this.plugin.settings.autoRenameFolder = value;
+            await this.plugin.saveSettings();
+          })
+      );
   }
 }
 
