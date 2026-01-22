@@ -229,12 +229,12 @@ export class PathCheckModal extends Modal {
    * Prompt user to rename an image file.
    * @param imageFile - The image file to rename
    * @param defaultBaseName - Default base name (without extension)
-   * @returns The new base name, or null if user cancelled
+   * @returns The new base name, 'keep' to use original name, or null if user cancelled/deleted
    */
   private async promptForImageName(
     imageFile: TFile,
     defaultBaseName: string
-  ): Promise<string | null> {
+  ): Promise<string | "keep" | null> {
     return new Promise((resolve) => {
       const modal = new RenameImageModal(
         this.app,
@@ -243,8 +243,19 @@ export class PathCheckModal extends Modal {
         async (newName: string) => {
           resolve(newName);
         },
+        async () => {
+          // Delete: remove the image file
+          try {
+            await this.vault.delete(imageFile);
+            resolve(null);
+          } catch (error) {
+            console.error(`Failed to delete image: ${imageFile.path}`, error);
+            resolve(null);
+          }
+        },
         () => {
-          resolve(null);
+          // Keep: use original name
+          resolve("keep");
         }
       );
       modal.open();
@@ -309,13 +320,19 @@ export class PathCheckModal extends Modal {
         let finalBaseName: string;
         if (this.settings.promptRenameImage) {
           // Prompt user for rename
-          finalBaseName = await this.promptForImageName(
+          const result = await this.promptForImageName(
             imageFile,
             defaultBaseName
           );
-          if (!finalBaseName) {
-            // User cancelled, skip this image
+          if (result === null) {
+            // User deleted or cancelled, skip this image
             continue;
+          } else if (result === "keep") {
+            // User chose to keep original name
+            finalBaseName = imageFile.basename;
+          } else {
+            // User provided a new name
+            finalBaseName = result;
           }
         } else {
           // Use default name
@@ -413,13 +430,19 @@ export class PathCheckModal extends Modal {
             let finalBaseName: string;
             if (this.settings.promptRenameImage) {
               // Prompt user for rename
-              finalBaseName = await this.promptForImageName(
+              const result = await this.promptForImageName(
                 imageFile,
                 defaultBaseName
               );
-              if (!finalBaseName) {
-                // User cancelled, skip this image
+              if (result === null) {
+                // User deleted or cancelled, skip this image
                 continue;
+              } else if (result === "keep") {
+                // User chose to keep original name
+                finalBaseName = imageFile.basename;
+              } else {
+                // User provided a new name
+                finalBaseName = result;
               }
             } else {
               // Use default name

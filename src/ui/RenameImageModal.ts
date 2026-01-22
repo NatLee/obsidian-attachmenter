@@ -4,12 +4,14 @@ import { PathSanitizer } from "../lib/pathSanitizer";
 export class RenameImageModal extends Modal {
   private newName: string;
   private resolved: boolean = false;
+  private actionButtonsContainer: HTMLElement | null = null;
 
   constructor(
     app: App,
     private imageFile: TFile,
     private defaultName: string,
     private onConfirm: (newName: string) => Promise<void>,
+    private onDelete?: () => Promise<void>,
     private onCancel?: () => void
   ) {
     super(app);
@@ -43,16 +45,6 @@ export class RenameImageModal extends Modal {
 
     new Setting(contentEl).addButton((button) => {
       button
-        .setButtonText("Use Default Name")
-        .setCta()
-        .onClick(async () => {
-          this.newName = this.defaultName;
-          await this.confirm();
-        });
-    });
-
-    new Setting(contentEl).addButton((button) => {
-      button
         .setButtonText("Cancel")
         .onClick(() => {
           this.cancel();
@@ -67,6 +59,63 @@ export class RenameImageModal extends Modal {
           await this.confirm();
         });
     });
+
+    // Show action buttons outside modal
+    this.showActionButtons();
+  }
+
+  private showActionButtons() {
+    // Create button container outside modal
+    this.actionButtonsContainer = document.createElement("div");
+    this.actionButtonsContainer.className = "attachmenter-rename-action-buttons";
+    this.actionButtonsContainer.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 10000;
+      background: var(--background-primary);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--background-modifier-border);
+    `;
+
+    // Delete button (on the left)
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "Delete";
+    deleteButton.className = "mod-warning";
+    deleteButton.style.cssText = `
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    `;
+    deleteButton.onclick = async () => {
+      if (this.onDelete) {
+        await this.onDelete();
+      }
+      this.close();
+    };
+
+    // Keep button (on the right, with different color)
+    const keepButton = document.createElement("button");
+    keepButton.textContent = "Keep";
+    keepButton.className = "mod-cta";
+    keepButton.style.cssText = `
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: var(--interactive-success);
+      color: var(--text-on-accent);
+    `;
+    keepButton.onclick = () => {
+      this.close();
+    };
+
+    this.actionButtonsContainer.appendChild(deleteButton);
+    this.actionButtonsContainer.appendChild(keepButton);
+    document.body.appendChild(this.actionButtonsContainer);
   }
 
   private async confirm() {
@@ -100,6 +149,10 @@ export class RenameImageModal extends Modal {
   onClose() {
     if (!this.resolved && this.onCancel) {
       this.onCancel();
+    }
+    if (this.actionButtonsContainer) {
+      this.actionButtonsContainer.remove();
+      this.actionButtonsContainer = null;
     }
     const { contentEl } = this;
     contentEl.empty();
