@@ -1,0 +1,11 @@
+.attachmenter-hidden-folder {
+  display: none;
+}
+
+.attachmenter-aero-folder {
+  opacity: 0.6;
+}
+
+.attachmenter-aero-folder:hover {
+  opacity: 1;
+}
