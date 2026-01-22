@@ -40,6 +40,7 @@ export default class AttachmenterPlugin extends Plugin {
     );
 
     this.pasteImageHandler = new PasteImageHandler(
+      this.app,
       this.app.vault,
       this.app.workspace,
       this.app.fileManager,

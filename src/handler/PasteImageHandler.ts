@@ -1,8 +1,9 @@
 import {
+  App,
   FileManager,
-  Notice,
   normalizePath,
   TAbstractFile,
+  TFolder,
   TFile,
   TextFileView,
   Vault,
@@ -13,6 +14,7 @@ import {
 import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
 import { NameResolver } from "../path/NameResolver";
+import { PasteImageDeleteModal } from "../ui/PasteImageDeleteModal";
 
 // Simple path utilities for browser environment
 function join(...parts: string[]): string {
@@ -29,6 +31,7 @@ export class PasteImageHandler {
   private nameResolver: NameResolver;
 
   constructor(
+    private app: App,
     private vault: Vault,
     private workspace: Workspace,
     private fileManager: FileManager,
@@ -82,12 +85,12 @@ export class PasteImageHandler {
     if (activeFile.extension === "md") {
       const result = await this._rename4MD(file, newPath, activeView, activeFile);
       if (result) {
-        this._showDeleteOption(result.file, result.linkText, activeView, activeFile);
+        this._showDeleteModal(result.file, result.linkText, activeView, activeFile, folderPath);
       }
     } else if (activeFile.extension === "canvas") {
       const result = await this._rename4Canvas(file, newPath, activeView, activeFile);
       if (result) {
-        this._showDeleteOption(result.file, result.filePath, activeView, activeFile);
+        this._showDeleteModal(result.file, result.filePath, activeView, activeFile, folderPath);
       }
     }
   }
@@ -173,55 +176,88 @@ export class PasteImageHandler {
     }
   }
 
-  private _showDeleteOption(
+  private _showDeleteModal(
     file: TFile,
     linkTextOrPath: string,
     activeView: TextFileView,
-    activeFile: TFile
+    activeFile: TFile,
+    folderPath: string
   ) {
-    const notice = new Notice("", 10000); // 10 seconds timeout
-    notice.noticeEl.createDiv({ text: "Image pasted. Delete it?" });
-    
-    const buttonContainer = notice.noticeEl.createDiv();
-    const deleteButton = buttonContainer.createEl("button", {
-      text: "Delete",
-      cls: "mod-cta",
-    });
-
-    deleteButton.onclick = async () => {
-      notice.hide();
-      
-      try {
-        // Remove the link from the document first
-        let content = activeView.getViewData();
-        
-        if (activeFile.extension === "md") {
-          // For markdown, remove the image link
-          // Handle both single-line and multi-line cases
-          const lines = content.split("\n");
-          const newLines = lines.filter((line) => !line.includes(linkTextOrPath));
-          content = newLines.join("\n");
-        } else if (activeFile.extension === "canvas") {
-          // For canvas, remove the node with this file
-          const data = JSON.parse(content) as { nodes?: Array<{ type?: string; file?: string; id?: string }> };
-          if (Array.isArray(data.nodes)) {
-            data.nodes = data.nodes.filter((node) => {
-              return !(node.type === "file" && node.file === linkTextOrPath);
-            });
-            content = JSON.stringify(data, null, "\t");
-          }
-        }
-        
-        activeView.setViewData(content, false);
-
-        // Delete the file
-        await this.fileManager.trashFile(file);
-        
-        new Notice("Image deleted");
-      } catch (error) {
-        console.error("Error deleting pasted image:", error);
-        new Notice("Failed to delete image");
+    const modal = new PasteImageDeleteModal(
+      this.app,
+      file,
+      linkTextOrPath,
+      activeView,
+      activeFile,
+      async () => {
+        await this._deleteImage(file, linkTextOrPath, activeView, activeFile, folderPath);
       }
-    };
+    );
+    modal.open();
+  }
+
+  private async _deleteImage(
+    file: TFile,
+    linkTextOrPath: string,
+    activeView: TextFileView,
+    activeFile: TFile,
+    folderPath: string
+  ) {
+    try {
+      // Remove the link from the document first
+      let content = activeView.getViewData();
+      
+      if (activeFile.extension === "md") {
+        // For markdown, remove the image link
+        // Handle both single-line and multi-line cases
+        const lines = content.split("\n");
+        const newLines = lines.filter((line) => !line.includes(linkTextOrPath));
+        content = newLines.join("\n");
+      } else if (activeFile.extension === "canvas") {
+        // For canvas, remove the node with this file
+        const data = JSON.parse(content) as { nodes?: Array<{ type?: string; file?: string; id?: string }> };
+        if (Array.isArray(data.nodes)) {
+          data.nodes = data.nodes.filter((node) => {
+            return !(node.type === "file" && node.file === linkTextOrPath);
+          });
+          content = JSON.stringify(data, null, "\t");
+        }
+      }
+      
+      activeView.setViewData(content, false);
+
+      // Delete the file
+      await this.fileManager.trashFile(file);
+
+      // Check if the attachment folder is empty and delete it if so
+      await this._deleteEmptyFolder(folderPath);
+    } catch (error) {
+      console.error("Error deleting pasted image:", error);
+      throw error;
+    }
+  }
+
+  private async _deleteEmptyFolder(folderPath: string) {
+    try {
+      // Check if folder exists
+      if (!(await this.vault.adapter.exists(folderPath))) {
+        return;
+      }
+
+      // Get the folder
+      const folder = this.vault.getAbstractFileByPath(folderPath);
+      if (!folder || !(folder instanceof TFolder)) {
+        return;
+      }
+
+      // Check if folder is empty
+      if (folder.children.length === 0) {
+        // Folder is empty, delete it
+        await this.vault.delete(folder);
+      }
+    } catch (error) {
+      console.error("Error checking/deleting empty folder:", error);
+      // Don't throw error, just log it
+    }
   }
 }
