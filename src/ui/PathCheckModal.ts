@@ -2,6 +2,7 @@ import {
   App,
   FileManager,
   Modal,
+  moment,
   Notice,
   TFile,
   TFolder,
@@ -15,10 +16,13 @@ import {
   type ValidationIssue,
   type ValidationResult,
 } from "../lib/PathValidator";
+import { NameResolver } from "../path/NameResolver";
+import { RenameImageModal } from "./RenameImageModal";
 
 export class PathCheckModal extends Modal {
   private validationResult: ValidationResult | null = null;
   private isRunning = false;
+  private nameResolver: NameResolver;
 
   constructor(
     app: App,
@@ -28,6 +32,7 @@ export class PathCheckModal extends Modal {
   ) {
     super(app);
     this.modalEl.addClass("attachmenter-path-check-modal");
+    this.nameResolver = new NameResolver(settings);
   }
 
   onOpen() {
@@ -221,6 +226,32 @@ export class PathCheckModal extends Modal {
   }
 
   /**
+   * Prompt user to rename an image file.
+   * @param imageFile - The image file to rename
+   * @param defaultBaseName - Default base name (without extension)
+   * @returns The new base name, or null if user cancelled
+   */
+  private async promptForImageName(
+    imageFile: TFile,
+    defaultBaseName: string
+  ): Promise<string | null> {
+    return new Promise((resolve) => {
+      const modal = new RenameImageModal(
+        this.app,
+        imageFile,
+        defaultBaseName,
+        async (newName: string) => {
+          resolve(newName);
+        },
+        () => {
+          resolve(null);
+        }
+      );
+      modal.open();
+    });
+  }
+
+  /**
    * Copy images to the target folder and update markdown links.
    * @param file - The markdown/canvas file
    * @param imageLinks - Array of image links found in the file
@@ -271,16 +302,34 @@ export class PathCheckModal extends Modal {
           continue;
         }
 
+        // Generate default name using NameResolver
+        const defaultBaseName = this.nameResolver.buildBaseName(file, moment());
+
+        // Determine the final name based on settings
+        let finalBaseName: string;
+        if (this.settings.promptRenameImage) {
+          // Prompt user for rename
+          finalBaseName = await this.promptForImageName(
+            imageFile,
+            defaultBaseName
+          );
+          if (!finalBaseName) {
+            // User cancelled, skip this image
+            continue;
+          }
+        } else {
+          // Use default name
+          finalBaseName = defaultBaseName;
+        }
+
         // Generate new path in target folder
-        const imageName = imageFile.name;
-        let newImagePath = `${targetFolder}/${imageName}`;
+        const ext = imageFile.extension;
+        let newImagePath = `${targetFolder}/${finalBaseName}.${ext}`;
 
         // Handle filename conflicts
         let counter = 1;
         while (this.vault.getAbstractFileByPath(newImagePath)) {
-          const ext = imageFile.extension;
-          const basename = imageFile.basename;
-          newImagePath = `${targetFolder}/${basename}_${counter}.${ext}`;
+          newImagePath = `${targetFolder}/${finalBaseName}_${counter}.${ext}`;
           counter++;
         }
 
@@ -354,16 +403,37 @@ export class PathCheckModal extends Modal {
               continue;
             }
 
+            // Generate default name using NameResolver
+            const defaultBaseName = this.nameResolver.buildBaseName(
+              file,
+              moment()
+            );
+
+            // Determine the final name based on settings
+            let finalBaseName: string;
+            if (this.settings.promptRenameImage) {
+              // Prompt user for rename
+              finalBaseName = await this.promptForImageName(
+                imageFile,
+                defaultBaseName
+              );
+              if (!finalBaseName) {
+                // User cancelled, skip this image
+                continue;
+              }
+            } else {
+              // Use default name
+              finalBaseName = defaultBaseName;
+            }
+
             // Generate new path in target folder
-            const imageName = imageFile.name;
-            let newImagePath = `${targetFolder}/${imageName}`;
+            const ext = imageFile.extension;
+            let newImagePath = `${targetFolder}/${finalBaseName}.${ext}`;
 
             // Handle filename conflicts
             let counter = 1;
             while (this.vault.getAbstractFileByPath(newImagePath)) {
-              const ext = imageFile.extension;
-              const basename = imageFile.basename;
-              newImagePath = `${targetFolder}/${basename}_${counter}.${ext}`;
+              newImagePath = `${targetFolder}/${finalBaseName}_${counter}.${ext}`;
               counter++;
             }
 

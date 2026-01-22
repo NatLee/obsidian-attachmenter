@@ -13,6 +13,8 @@ export interface AttachmenterSettings {
   aeroFolder: boolean;
   /** Automatically rename attachment folder when note is renamed. */
   autoRenameFolder: boolean;
+  /** Prompt user to rename images when moving them during path check. */
+  promptRenameImage: boolean;
 }
 
 export const DEFAULT_SETTINGS: AttachmenterSettings = {
@@ -23,5 +25,6 @@ export const DEFAULT_SETTINGS: AttachmenterSettings = {
   hideFolder: false,
   aeroFolder: true,
   autoRenameFolder: true,
+  promptRenameImage: true,
 };
 

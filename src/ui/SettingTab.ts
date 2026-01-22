@@ -130,6 +130,18 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       .setHeading();
 
     new Setting(containerEl)
+      .setName("Prompt to rename images")
+      .setDesc("When moving images during path check, prompt user to rename each image. If disabled, use default naming format.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.promptRenameImage)
+          .onChange(async (value) => {
+            this.plugin.settings.promptRenameImage = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
       .setName("Check attachment folder paths")
       .setDesc("Validate all attachment folder paths and check for issues (invalid characters, missing folders, name mismatches).")
       .addButton((button) =>
