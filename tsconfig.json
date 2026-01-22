@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "ES2018",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "lib": ["DOM", "ES2018"],
+    "allowJs": false,
+    "noEmitOnError": false,
+    "esModuleInterop": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "types": ["obsidian"],
+    "skipLibCheck": true
+  },
+  "include": ["main.ts", "src/**/*.ts"]
+}
+
