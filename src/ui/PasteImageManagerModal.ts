@@ -26,6 +26,8 @@ export class PasteImageManagerModal extends Modal {
   private currentPath: string;
   private originalPath: string;
   private pathResolver: PathResolver;
+  private isDeleting: boolean = false;
+  private actionsPanelContainer: HTMLElement | null = null;
 
   constructor(
     app: App,
@@ -99,6 +101,7 @@ export class PasteImageManagerModal extends Modal {
       cls: "attachmenter-panel",
       attr: { "data-panel": "actions" },
     });
+    this.actionsPanelContainer = actionsPanel;
     this._renderActionsPanel(actionsPanel);
 
     // Tab switching
@@ -126,6 +129,19 @@ export class PasteImageManagerModal extends Modal {
 
     // Set focus on Keep button by default
     keepButton.focus();
+
+    // Add ESC key support for canceling delete confirmation
+    this.scope.register(["Escape"], (evt) => {
+      if (this.isDeleting) {
+        this.isDeleting = false;
+        if (this.actionsPanelContainer) {
+          this._renderActionsPanel(this.actionsPanelContainer);
+        }
+        return false; // Prevent default behavior (closing modal)
+      }
+      // Let default ESC behavior work for closing modal when not in delete confirmation
+      return true;
+    });
   }
 
   private _renderPreviewPanel(container: HTMLElement) {
@@ -237,6 +253,17 @@ export class PasteImageManagerModal extends Modal {
   }
 
   private _renderActionsPanel(container: HTMLElement) {
+    // Clear container first
+    container.empty();
+    
+    if (this.isDeleting) {
+      this._renderDeleteConfirmation(container);
+    } else {
+      this._renderNormalActions(container);
+    }
+  }
+
+  private _renderNormalActions(container: HTMLElement) {
     container.createEl("p", {
       text: "Available actions for this image:",
       cls: "attachmenter-description",
@@ -261,43 +288,10 @@ export class PasteImageManagerModal extends Modal {
       text: "Delete",
       cls: "mod-warning",
     });
-    deleteButton.onclick = async () => {
-      const confirmed = await new Promise<boolean>((resolve) => {
-        // Simple confirmation
-        const confirmModal = new Modal(this.app);
-        confirmModal.titleEl.setText("Confirm Delete");
-        confirmModal.contentEl.createEl("p", {
-          text: "Are you sure you want to delete this image? This action cannot be undone.",
-        });
-        const buttonContainer = confirmModal.contentEl.createDiv({
-          cls: "modal-button-container",
-        });
-        const confirmBtn = buttonContainer.createEl("button", {
-          text: "Delete",
-          cls: "mod-warning",
-        });
-        const cancelBtn = buttonContainer.createEl("button", {
-          text: "Cancel",
-        });
-        confirmBtn.onclick = () => {
-          confirmModal.close();
-          resolve(true);
-        };
-        cancelBtn.onclick = () => {
-          confirmModal.close();
-          resolve(false);
-        };
-        confirmModal.open();
-      });
-
-      if (confirmed) {
-        try {
-          await this.onDelete(this.folderPath);
-          this.close();
-        } catch (error) {
-          console.error("Error deleting image:", error);
-          new Notice("Failed to delete image");
-        }
+    deleteButton.onclick = () => {
+      this.isDeleting = true;
+      if (this.actionsPanelContainer) {
+        this._renderActionsPanel(this.actionsPanelContainer);
       }
     };
 
@@ -333,6 +327,59 @@ export class PasteImageManagerModal extends Modal {
         new Notice("Failed to move image");
       }
     };
+  }
+
+  private _renderDeleteConfirmation(container: HTMLElement) {
+    // Warning message
+    const warningContainer = container.createDiv({
+      cls: "attachmenter-delete-warning",
+    });
+    warningContainer.createEl("p", {
+      text: "⚠️ Are you sure you want to delete this image?",
+      cls: "attachmenter-warning-text",
+    });
+    warningContainer.createEl("p", {
+      text: "This action cannot be undone.",
+      cls: "attachmenter-warning-detail",
+    });
+
+    // Button container
+    const buttonContainer = container.createDiv({
+      cls: "attachmenter-delete-buttons",
+    });
+
+    const cancelButton = buttonContainer.createEl("button", {
+      text: "Cancel",
+      cls: "mod-cta",
+    });
+    cancelButton.onclick = () => {
+      this.isDeleting = false;
+      if (this.actionsPanelContainer) {
+        this._renderActionsPanel(this.actionsPanelContainer);
+      }
+    };
+
+    const confirmButton = buttonContainer.createEl("button", {
+      text: "Confirm Delete",
+      cls: "mod-warning",
+    });
+    confirmButton.onclick = async () => {
+      try {
+        await this.onDelete(this.folderPath);
+        this.close();
+      } catch (error) {
+        console.error("Error deleting image:", error);
+        new Notice("Failed to delete image");
+        // Reset to normal state on error
+        this.isDeleting = false;
+        if (this.actionsPanelContainer) {
+          this._renderActionsPanel(this.actionsPanelContainer);
+        }
+      }
+    };
+
+    // Set focus on cancel button by default for safety
+    cancelButton.focus();
   }
 
   onClose() {
