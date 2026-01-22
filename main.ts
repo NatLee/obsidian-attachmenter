@@ -8,15 +8,28 @@ import { RemoteImageService } from "./src/core/RemoteImageService";
 import { AttachmenterSettingTab } from "./src/ui/SettingTab";
 import { HideFolderRibbon } from "./src/ui/HideFolderRibbon";
 import { PasteImageHandler } from "./src/handler/PasteImageHandler";
+import { VaultAttachmentConfiguration } from "./src/components/VaultAttachmentConfiguration";
+import { FileOpenHandler } from "./src/handler/FileOpenHandler";
+import { PathResolver } from "./src/path/PathResolver";
 
 export default class AttachmenterPlugin extends Plugin {
   settings: AttachmenterSettings;
   remoteImageService: RemoteImageService;
   hideFolderRibbon: HideFolderRibbon;
   pasteImageHandler: PasteImageHandler;
+  vaultAttachmentConfiguration: VaultAttachmentConfiguration;
+  fileOpenHandler: FileOpenHandler;
 
   async onload() {
     await this.loadSettings();
+
+    // Initialize vault attachment configuration to manage Obsidian's attachment path
+    this.vaultAttachmentConfiguration = new VaultAttachmentConfiguration(
+      this.app.vault
+    );
+    this.vaultAttachmentConfiguration.backup();
+
+    const pathResolver = new PathResolver(this.app.vault, this.settings);
 
     this.remoteImageService = new RemoteImageService(
       this.app.vault,
@@ -31,6 +44,11 @@ export default class AttachmenterPlugin extends Plugin {
       this.app.workspace,
       this.app.fileManager,
       this.settings
+    );
+
+    this.fileOpenHandler = new FileOpenHandler(
+      this.vaultAttachmentConfiguration,
+      pathResolver
     );
 
     this.hideFolderRibbon = new HideFolderRibbon(this);
@@ -68,10 +86,26 @@ export default class AttachmenterPlugin extends Plugin {
         this.pasteImageHandler.handle(file);
       })
     );
+
+    // Register file open event to update attachment path configuration
+    // This ensures the paste image dialog shows the correct path
+    this.registerEvent(
+      this.app.workspace.on("file-open", (file) => {
+        this.fileOpenHandler.handle(file);
+      })
+    );
+
+    // Update attachment path for the currently active file if any
+    const activeFile = this.app.workspace.getActiveFile();
+    if (activeFile) {
+      this.fileOpenHandler.handle(activeFile);
+    }
   }
 
   async onunload() {
     this.hideFolderRibbon.unload();
+    // Restore the original vault attachment configuration
+    this.vaultAttachmentConfiguration.restore();
   }
 
   async loadSettings() {
