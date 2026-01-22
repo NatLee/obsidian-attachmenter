@@ -3,6 +3,9 @@ name: Release
 on:
   release:
     types: [created]
+  push:
+    tags:
+      - "v*"
 
 jobs:
   build:
@@ -39,9 +42,21 @@ jobs:
           echo "Files ready for release:"
           ls -lh main.js manifest.json styles.css 2>/dev/null || true
 
+      - name: Determine release tag
+        id: release_tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Release tag: $TAG"
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
           files: |
             main.js
             manifest.json
