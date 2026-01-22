@@ -95,6 +95,18 @@ export default class AttachmenterPlugin extends Plugin {
       })
     );
 
+    // Register file rename event to update attachment path configuration
+    // This ensures the paste image dialog shows the correct path after renaming
+    this.registerEvent(
+      this.app.vault.on("rename", (file, oldPath) => {
+        // Check if the renamed file is the currently active file
+        const activeFile = this.app.workspace.getActiveFile();
+        if (activeFile && activeFile.path === file.path) {
+          this.fileOpenHandler.handle(activeFile);
+        }
+      })
+    );
+
     // Update attachment path for the currently active file if any
     const activeFile = this.app.workspace.getActiveFile();
     if (activeFile) {
