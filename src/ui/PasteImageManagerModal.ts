@@ -97,7 +97,7 @@ export class PasteImageManagerModal extends Modal {
     const previewContainer = previewSection.createDiv({
       cls: "attachmenter-modal-preview",
     });
-    const img = previewContainer.createEl("img", {
+    previewContainer.createEl("img", {
       attr: {
         src: this.vault.getResourcePath(this.file),
         alt: t("pasteImage.previewAlt"),

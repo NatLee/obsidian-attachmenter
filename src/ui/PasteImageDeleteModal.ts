@@ -38,7 +38,7 @@ export class PasteImageDeleteModal extends Modal {
     });
     
     // Create image element
-    const img = previewContainer.createEl("img", {
+    previewContainer.createEl("img", {
       attr: {
         src: this.vault.getResourcePath(this.file),
         alt: t("pasteImage.previewAlt"),

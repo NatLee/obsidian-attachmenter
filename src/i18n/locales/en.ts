@@ -64,7 +64,7 @@ export const en: TranslationMap = {
     checkPaths: {
       name: "Check attachment folder paths",
       desc: "Validate all attachment folder paths and check for issues (invalid characters, missing folders, name mismatches).",
-      button: "Check Paths"
+      button: "Check paths"
     }
   },
 
@@ -95,7 +95,7 @@ export const en: TranslationMap = {
 
   // 路径检查模态框
   pathCheck: {
-    title: "Path Validation",
+    title: "Path validation",
     checking: "Checking attachment folder paths for all notes...",
     summary: "Summary",
     totalFilesChecked: "Total files checked: {count}",
@@ -103,41 +103,41 @@ export const en: TranslationMap = {
     nameMismatches: "Name mismatches: {count}",
     invalidChars: "Files with invalid characters: {count}",
     allValid: "✓ All paths are valid!",
-    issuesFound: "Issues Found",
-    missingFoldersTitle: "Missing Folders",
-    nameMismatchesTitle: "Name Mismatches",
-    invalidCharsTitle: "Invalid Characters",
+    issuesFound: "Issues found",
+    missingFoldersTitle: "Missing folders",
+    nameMismatchesTitle: "Name mismatches",
+    invalidCharsTitle: "Invalid characters",
     expected: "Expected: {path}",
     actual: "Actual: {path}",
     nA: "N/A",
     invalidCharacters: "Invalid characters: {chars}",
     noteName: "Note name: {name}",
     moreIssues: "... and {count} more issues",
-    fixAll: "Fix All Issues"
+    fixAll: "Fix all issues"
   },
 
   // 粘贴图片管理模态框
   pasteImage: {
-    manageTitle: "Manage Pasted Image",
+    manageTitle: "Manage pasted image",
     changeLocation: "Change the save location for this image:",
     currentPath: "Current path",
     newPath: "New path",
     newPathDesc: "Enter the new path for this image",
     suggestedPaths: "Suggested paths:",
     use: "Use",
-    applyPathChange: "Apply Path Change",
+    applyPathChange: "Apply path change",
 
     deleteConfirm: "⚠️ Are you sure you want to delete this image?",
     deleteConfirmDesc: "This action cannot be undone.",
-    confirmDelete: "Confirm Delete",
-    pastedTitle: "Image Pasted",
-    keepImage: "Keep Image",
+    confirmDelete: "Confirm delete",
+    pastedTitle: "Image pasted",
+    keepImage: "Keep image",
     previewAlt: "Pasted image preview"
   },
 
   // 重命名图片模态框
   renameImage: {
-    title: "Rename Image",
+    title: "Rename image",
     renameDesc: "Rename image: {filename}",
     newName: "New name",
     newNameDesc: "Enter the new name for the image (without extension)"

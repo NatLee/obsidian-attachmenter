@@ -352,7 +352,8 @@ export class RemoteImageService {
       }
       
       // response.arrayBuffer is a Promise property in Obsidian's requestUrl response
-      const arrayBuffer = await response.arrayBuffer;
+      // Type assertion needed due to Obsidian's type definitions
+      const arrayBuffer = await (response.arrayBuffer as Promise<ArrayBuffer>);
       
       const file = await this.vault.createBinary(fullPath, arrayBuffer);
       

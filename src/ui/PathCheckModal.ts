@@ -47,7 +47,10 @@ export class PathCheckModal extends Modal {
     });
 
     // Run validation
-    this.runValidation();
+    void this.runValidation().catch((error) => {
+      console.error("Error running validation:", error);
+      new Notice(t("notices.validationFailed"));
+    });
   }
 
   private async runValidation() {
@@ -247,7 +250,7 @@ export class PathCheckModal extends Modal {
         async () => {
           // Delete: remove the image file
           try {
-            await this.vault.delete(imageFile);
+            await this.fileManager.trashFile(imageFile);
             resolve(null);
           } catch (error) {
             console.error(`Failed to delete image: ${imageFile.path}`, error);

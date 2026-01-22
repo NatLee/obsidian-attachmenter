@@ -4,13 +4,6 @@ import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
 import { PathSanitizer } from "./pathSanitizer";
 
-// Simple path utilities
-function dirname(path: string): string {
-  const parts = path.split("/");
-  parts.pop();
-  return parts.join("/") || ".";
-}
-
 export interface ImageLink {
   match: string; // 完整的匹配字串，如 ![alt](path)
   linkText: string; // 連結文字部分
@@ -280,7 +273,6 @@ export class PathValidator {
       }
 
       const expectedFolderPath = pathResolver.getAttachmentFolderForNote(file);
-      const expectedFolderName = expectedFolderPath.split("/").pop() || "";
 
       // Check if folder exists
       const folder = vault.getAbstractFileByPath(expectedFolderPath);
@@ -299,7 +291,6 @@ export class PathValidator {
       }
 
       // Folder exists, check if name matches expected (considering sanitization)
-      const actualFolderName = actualFolderPath.split("/").pop() || "";
       
       // Check for invalid characters in the original note name
       const invalidChars = PathSanitizer.findInvalidCharacters(file.basename);

@@ -46,7 +46,7 @@ export class PathSanitizer {
     sanitized = sanitized.replace(/^[\s.]+|[\s.]+$/g, "");
 
     // Remove any remaining control characters (C0 and DEL control characters)
-    // eslint-disable-next-line no-control-regex
+    // eslint-disable-next-line no-control-regex -- Control characters (0x00-0x1F and 0x7F) are invalid in filenames and must be removed
     sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, "");
 
     // Ensure name is not empty after sanitization
@@ -77,7 +77,7 @@ export class PathSanitizer {
 
     const invalid: string[] = [];
     // Pattern includes control characters (C0 and DEL) which are invalid in filenames
-    // eslint-disable-next-line no-control-regex
+    // eslint-disable-next-line no-control-regex -- Control characters (0x00-0x1F and 0x7F) are invalid in filenames and must be detected
     const allInvalidPattern = /[<>:"/\\|?*#\0\x00-\x1F\x7F]/g;
     let match;
 

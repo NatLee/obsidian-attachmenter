@@ -340,7 +340,7 @@ export class PasteImageHandler {
       // Check if folder is empty
       if (folder.children.length === 0) {
         // Folder is empty, delete it
-        await this.vault.delete(folder);
+        await this.fileManager.trashFile(folder);
       }
     } catch (error) {
       console.error("Error checking/deleting empty folder:", error);

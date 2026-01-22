@@ -2,7 +2,6 @@ import { TFile } from "obsidian";
 
 import { VaultAttachmentConfiguration } from "../components/VaultAttachmentConfiguration";
 import { PathResolver } from "../path/PathResolver";
-import type { AttachmenterSettings } from "../model/Settings";
 
 export class FileOpenHandler {
   private vaultAttachmentConfiguration: VaultAttachmentConfiguration;

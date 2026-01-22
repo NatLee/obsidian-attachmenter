@@ -124,7 +124,6 @@ export class RenameImageModal extends Modal {
     this.resolved = true;
 
     // Sanitize the filename
-    const ext = this.imageFile.extension;
     const sanitizedName = this.sanitizeFileName(this.newName);
     const finalName = sanitizedName || this.defaultName;
 
