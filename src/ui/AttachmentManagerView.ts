@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, TFolder, setIcon } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, TFolder, setIcon, Notice } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { buildFolderRegExp } from "./HideFolderRibbon";
 import { t } from "../i18n/index";
@@ -6,6 +6,7 @@ import { RenameImageModal } from "./RenameImageModal";
 import { AttachmentRenameHandler } from "../handler/AttachmentRenameHandler";
 import { PathResolver } from "../path/PathResolver";
 import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
+import { AttachmentDeleteModal } from "./AttachmentDeleteModal";
 
 export const ATTACHMENT_MANAGER_VIEW_TYPE = "attachment-manager";
 
@@ -44,7 +45,7 @@ export class AttachmentManagerView extends ItemView {
 
   async onOpen() {
     await this.render();
-    
+
     // Listen for vault changes to refresh the view (with debounce)
     // Note: Manual calls to render() bypass this debounce via isRendering lock
     let renderTimeout: number | null = null;
@@ -62,7 +63,7 @@ export class AttachmentManagerView extends ItemView {
         }
       }, 300);
     };
-    
+
     this.registerEvent(
       this.plugin.app.vault.on("create", debouncedRender)
     );
@@ -72,7 +73,7 @@ export class AttachmentManagerView extends ItemView {
     this.registerEvent(
       this.plugin.app.vault.on("rename", debouncedRender)
     );
-    
+
     // Also listen for workspace layout changes
     this.registerEvent(
       this.plugin.app.workspace.on("layout-change", debouncedRender)
@@ -94,7 +95,7 @@ export class AttachmentManagerView extends ItemView {
 
     try {
       const container = this.contentEl;
-      
+
       // Clear previous content
       if (container.hasClass("attachmenter-manager-view")) {
         container.empty();
@@ -140,10 +141,10 @@ export class AttachmentManagerView extends ItemView {
 
       // Render grouped list
       const listContainer = container.createDiv({ cls: "attachmenter-manager-list" });
-      
+
       Object.entries(groupedByFolder).forEach(([folderPath, items]) => {
         const folderSection = listContainer.createDiv({ cls: "attachmenter-manager-folder-section" });
-        
+
         // Folder header
         const folderHeader = folderSection.createDiv({ cls: "attachmenter-manager-folder-header" });
         folderHeader.createEl("h3", { text: folderPath });
@@ -199,7 +200,7 @@ export class AttachmentManagerView extends ItemView {
       if (filter.test(folder.name)) {
         // This is an attachment folder, find the note that owns it
         const noteFile = this.findNoteForAttachmentFolder(folder, pathResolver);
-        
+
         // Get all files in this folder
         folder.children?.forEach((child) => {
           if (child instanceof TFile) {
@@ -236,21 +237,21 @@ export class AttachmentManagerView extends ItemView {
     // Use latest settings
     const folderName = attachmentFolder.name;
     const folderSuffix = this.plugin.settings.defaultFolderSuffix || "_Attachments";
-    
+
     // Extract note name from folder name (remove suffix)
     if (folderName.endsWith(folderSuffix)) {
       const noteName = folderName.substring(0, folderName.length - folderSuffix.length);
-      
+
       // Search for the note file
       const allNotes = this.plugin.app.vault.getMarkdownFiles();
       const folderDir = attachmentFolder.parent?.path || "";
-      
+
       // Try exact match first
-      let noteFile = allNotes.find(n => 
-        n.basename === noteName && 
+      let noteFile = allNotes.find(n =>
+        n.basename === noteName &&
         (folderDir === "" || n.path.startsWith(folderDir))
       );
-      
+
       if (!noteFile) {
         // Try sanitized name match
         noteFile = allNotes.find(n => {
@@ -258,10 +259,10 @@ export class AttachmentManagerView extends ItemView {
           return sanitized === noteName || sanitized.trim() === noteName.trim();
         });
       }
-      
+
       return noteFile || null;
     }
-    
+
     return null;
   }
 
@@ -279,19 +280,19 @@ export class AttachmentManagerView extends ItemView {
 
   private renderAttachmentItem(item: AttachmentItem, container: HTMLElement) {
     const itemEl = container.createDiv({ cls: "attachmenter-manager-item" });
-    
+
     // Left side: file info
     const fileInfo = itemEl.createDiv({ cls: "attachmenter-manager-item-info" });
-    
+
     const fileIcon = fileInfo.createSpan({ cls: "attachmenter-manager-item-icon" });
     setIcon(fileIcon, this.getFileIcon(item.file.extension));
-    
+
     const fileName = fileInfo.createSpan({ cls: "attachmenter-manager-item-name" });
     fileName.textContent = item.file.name;
-    
+
     // Right side: actions
     const actions = itemEl.createDiv({ cls: "attachmenter-manager-item-actions" });
-    
+
     // Preview button
     const previewButton = actions.createEl("button", {
       text: t("attachmentManager.preview"),
@@ -300,7 +301,7 @@ export class AttachmentManagerView extends ItemView {
     previewButton.onclick = () => {
       this.showPreview(item.file);
     };
-    
+
     // Rename button
     const renameButton = actions.createEl("button", {
       text: t("attachmentManager.rename")
@@ -308,7 +309,16 @@ export class AttachmentManagerView extends ItemView {
     renameButton.onclick = () => {
       this.showRenameDialog(item);
     };
-    
+
+    // Delete button
+    const deleteButton = actions.createEl("button", {
+      text: t("attachmentManager.delete"),
+      cls: "mod-warning"
+    });
+    deleteButton.onclick = () => {
+      this.showDeleteConfirmation(item);
+    };
+
     // Open note button (if available)
     if (item.noteFile) {
       const openNoteButton = actions.createEl("button", {
@@ -357,6 +367,23 @@ export class AttachmentManagerView extends ItemView {
           newName,
           item.noteFile
         );
+        // Refresh the view
+        await this.render();
+        // Refresh file attachment trees
+        this.plugin.fileAttachmentTree.refreshAllFiles();
+      }
+    );
+    modal.open();
+  }
+
+  private showDeleteConfirmation(item: AttachmentItem) {
+    const modal = new AttachmentDeleteModal(
+      this.plugin.app,
+      this.plugin.app.vault,
+      item.file,
+      async () => {
+        // Delete the file
+        await this.plugin.app.vault.trash(item.file, true);
         // Refresh the view
         await this.render();
         // Refresh file attachment trees

@@ -86,11 +86,11 @@ export class PathCheckModal extends Modal {
       return;
     }
 
-    // Remove status message
-    const statusEl = contentEl.querySelector(".attachmenter-check-status");
-    if (statusEl) {
-      statusEl.remove();
-    }
+    // Clear content before rendering (important when returning from change plan view)
+    contentEl.empty();
+
+    // Add title
+    contentEl.createEl("h2", { text: t("pathCheck.title") });
 
     // Render detailed statistics
     this.renderStatistics();
@@ -156,7 +156,7 @@ export class PathCheckModal extends Modal {
       const buttonContainer = contentEl.createDiv({
         cls: "attachmenter-fix-buttons",
       });
-      
+
       // Preview changes button (dry-run)
       const previewButton = buttonContainer.createEl("button", {
         text: t("pathCheck.previewChanges"),
@@ -165,7 +165,7 @@ export class PathCheckModal extends Modal {
       previewButton.onclick = async () => {
         await this.generateAndShowChangePlan();
       };
-      
+
       // Execute fixes button (direct execution)
       const executeButton = buttonContainer.createEl("button", {
         text: t("pathCheck.executeChanges"),
@@ -730,9 +730,9 @@ export class PathCheckModal extends Modal {
     }
 
     new Notice(
-      t("notices.fixedIssues", { 
-        fixed, 
-        failed: failed > 0 ? t("notices.fixedIssuesFailed", { failed }) : "" 
+      t("notices.fixedIssues", {
+        fixed,
+        failed: failed > 0 ? t("notices.fixedIssuesFailed", { failed }) : ""
       })
     );
 

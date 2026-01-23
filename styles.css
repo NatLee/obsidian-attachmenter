@@ -648,24 +648,25 @@
 }
 
 /* File Attachment Tree Styles */
-.attachmenter-expand-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  vertical-align: middle;
-}
-
-.attachmenter-expand-button svg {
-  width: 12px;
-  height: 12px;
-}
-
+/* Container can be inline (sibling) or floating (popover) */
 .attachmenter-file-attachments {
   margin-left: 1.5em;
   margin-top: 0.25em;
-  margin-bottom: 0.25em;
+  margin-bottom: 0.5em;
+  padding-left: 0.75em;
+  border-left: 2px solid var(--background-modifier-border);
+}
+
+/* Floating popover style - positioned outside file explorer */
+.attachmenter-file-attachments.attachmenter-popover {
+  margin: 0;
+  padding: 0.75em;
+  border-left: none;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 250px;
 }
 
 .attachmenter-no-attachments {
@@ -682,14 +683,78 @@
 .attachmenter-folder-header {
   display: flex;
   align-items: center;
-  padding: 0.25em 0;
+  padding: 0.35em 0.5em;
   color: var(--text-muted);
   font-size: 0.85em;
   user-select: none;
+  background: var(--background-secondary-alt);
+  border-radius: 6px;
+  margin-bottom: 0.25em;
+}
+
+.attachmenter-folder-icon {
+  margin-right: 0.5em;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-accent);
+}
+
+.attachmenter-folder-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.attachmenter-folder-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.attachmenter-count-badge {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
 }
 
 .attachmenter-folder-files {
-  margin-left: 1.5em;
+  margin-left: 1em;
+  padding-left: 0.5em;
+  border-left: 2px solid var(--background-modifier-border);
+}
+
+.attachmenter-empty-folder-msg {
+  padding: 0.5em;
+  color: var(--text-muted);
+  font-size: 0.85em;
+  font-style: italic;
+}
+
+.attachmenter-load-more-container {
+  margin-top: 0.5em;
+  padding: 0.25em 0;
+}
+
+.attachmenter-load-more-btn {
+  width: 100%;
+  padding: 0.5em 1em;
+  font-size: 0.85em;
+  background: var(--background-modifier-border);
+  border: 1px dashed var(--text-muted);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.attachmenter-load-more-btn:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
 }
 
 .attachmenter-attachment-file {
@@ -757,6 +822,32 @@
 
 .attachmenter-action-button:hover {
   background: var(--background-modifier-hover);
+}
+
+/* Danger button styling for delete actions */
+.attachmenter-action-button-danger {
+  color: var(--text-error);
+}
+
+.attachmenter-action-button-danger:hover {
+  background: var(--background-modifier-error);
+  color: var(--text-on-accent);
+}
+
+/* Expand button consistent positioning on the right side */
+.attachmenter-expand-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  z-index: 1;
+}
+
+.attachmenter-expand-button svg {
+  width: 12px;
+  height: 12px;
 }
 
 /* Attachment Manager Button in File Explorer */

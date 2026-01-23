@@ -211,7 +211,8 @@ export const en: TranslationMap = {
   // 文件附件树
   fileAttachmentTree: {
     noAttachments: "No attachments",
-    emptyFolder: "Folder is empty"
+    emptyFolder: "Folder is empty",
+    loadMore: "Load {{count}} more..."
   },
 
   // 附件管理器
@@ -221,7 +222,12 @@ export const en: TranslationMap = {
     empty: "No attachments found",
     preview: "Preview",
     rename: "Rename",
+    delete: "Delete",
     openNote: "Open Note",
-    previewNotAvailable: "Preview not available for this file type"
+    previewNotAvailable: "Preview not available for this file type",
+    deleteConfirm: "Delete attachment",
+    deleteConfirmDesc: "Are you sure you want to delete \"{filename}\"? This action cannot be undone.",
+    deleteSuccess: "Attachment deleted successfully",
+    deleteFailed: "Failed to delete attachment"
   }
 };

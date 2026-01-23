@@ -5,6 +5,7 @@ import { t } from "../i18n/index";
 import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
 import { RenameImageModal } from "./RenameImageModal";
 import { AttachmentRenameHandler } from "../handler/AttachmentRenameHandler";
+import { AttachmentDeleteModal } from "./AttachmentDeleteModal";
 
 export class FileAttachmentTree {
   private expandedFiles: Set<string> = new Set();
@@ -14,6 +15,8 @@ export class FileAttachmentTree {
   private refreshTimeout: number | null = null;
   private isProcessing: boolean = false;
   private isEnabled: boolean = false;
+  private isRenderingTree: boolean = false; // Lock to prevent refresh during tree rendering
+  private isModalOpen: boolean = false; // Prevent multiple modals from opening
 
   constructor(private plugin: AttachmenterPlugin) {
     this.pathResolver = new PathResolver(this.plugin.app.vault, this.plugin.settings);
@@ -61,13 +64,14 @@ export class FileAttachmentTree {
   }
 
   private debouncedRefresh() {
-    if (!this.isEnabled) return;
+    // Skip refresh if disabled or currently rendering a tree
+    if (!this.isEnabled || this.isRenderingTree) return;
 
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
     }
     this.refreshTimeout = window.setTimeout(() => {
-      if (this.isEnabled) {
+      if (this.isEnabled && !this.isRenderingTree) {
         this.doRefreshAllFiles();
       }
     }, 300);
@@ -76,21 +80,50 @@ export class FileAttachmentTree {
   private initializeFileWatchers() {
     if (!this.isEnabled || this.isProcessing) return;
 
+    // Disconnect existing observer if any
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+    }
+
     // Watch for new files being added to the file explorer
     this.mutationObserver = new MutationObserver((mutations) => {
-      if (this.isProcessing) return;
+      // Skip if processing or rendering tree
+      if (this.isProcessing || this.isRenderingTree) return;
 
       let shouldProcess = false;
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node instanceof HTMLElement) {
-            // Check if it's a nav-file element
-            if (node.classList.contains("nav-file") || node.querySelector(".nav-file")) {
+      for (const mutation of mutations) {
+        for (const node of Array.from(mutation.addedNodes)) {
+          if (!(node instanceof HTMLElement)) continue;
+
+          // Ignore any attachment tree-related elements
+          if (node.classList.contains('attachmenter-file-attachments') ||
+            node.classList.contains('attachmenter-attachment-file') ||
+            node.classList.contains('attachmenter-attachment-folder') ||
+            node.classList.contains('attachmenter-expand-button') ||
+            node.classList.contains('attachmenter-folder-files') ||
+            node.classList.contains('attachmenter-folder-header') ||
+            node.classList.contains('attachmenter-count-badge') ||
+            node.classList.contains('attachmenter-load-more-container') ||
+            node.closest('.attachmenter-file-attachments')) {
+            continue; // Skip attachment tree elements
+          }
+
+          // Check for nav-file elements that DON'T already have expand buttons
+          const navFiles = node.classList.contains('nav-file')
+            ? [node]
+            : Array.from(node.querySelectorAll('.nav-file'));
+
+          for (const navFile of navFiles) {
+            // Only process if this nav-file doesn't have our button yet
+            if (!navFile.querySelector('.attachmenter-expand-button')) {
               shouldProcess = true;
+              break;
             }
           }
-        });
-      });
+          if (shouldProcess) break;
+        }
+        if (shouldProcess) break;
+      }
 
       if (shouldProcess) {
         this.debouncedRefresh();
@@ -114,7 +147,7 @@ export class FileAttachmentTree {
   }
 
   private doRefreshAllFiles() {
-    if (!this.isEnabled || this.isProcessing) return;
+    if (!this.isEnabled || this.isProcessing || this.isRenderingTree) return;
     this.isProcessing = true;
 
     try {
@@ -134,11 +167,14 @@ export class FileAttachmentTree {
         }
 
         // Check if container is visible (not hidden)
-        const navFilesContainer = container.querySelector('.nav-files-container');
+        const navFilesContainer = container.querySelector('.nav-files-container') as HTMLElement;
         if (!navFilesContainer || navFilesContainer.offsetHeight === 0) {
           this.isProcessing = false;
           return;
         }
+
+        // Save scroll position before processing
+        const scrollTop = navFilesContainer.scrollTop;
 
         // Find all markdown files in the file explorer
         const fileElements = container.querySelectorAll('.nav-file');
@@ -148,6 +184,11 @@ export class FileAttachmentTree {
             this.processFileElement(fileEl);
           }
         });
+
+        // Restore scroll position after processing
+        if (navFilesContainer.scrollTop !== scrollTop) {
+          navFilesContainer.scrollTop = scrollTop;
+        }
 
         this.isProcessing = false;
       });
@@ -222,10 +263,19 @@ export class FileAttachmentTree {
     // Check if expand button already exists
     const existingButton = fileEl.querySelector('.attachmenter-expand-button');
     if (existingButton) {
-      // Button exists, but check if attachment tree needs to be restored
-      if (this.expandedFiles.has(file.path) && !this.fileAttachmentContainers.has(file.path)) {
-        // Tree was expanded but container was lost, restore it
-        this.renderAttachmentTree(file, fileEl);
+      // Button exists - check if we need to restore the tree
+      if (this.expandedFiles.has(file.path)) {
+        const existingContainer = this.fileAttachmentContainers.get(file.path);
+        // Only re-render if container is completely missing or not in DOM
+        if (!existingContainer || !document.body.contains(existingContainer)) {
+          // Set rendering lock before restoring
+          this.isRenderingTree = true;
+          try {
+            this.renderAttachmentTree(file, fileEl);
+          } finally {
+            setTimeout(() => { this.isRenderingTree = false; }, 50);
+          }
+        }
       }
       return;
     }
@@ -235,40 +285,179 @@ export class FileAttachmentTree {
   }
 
   private addExpandButtonToFile(fileEl: HTMLElement, file: TFile) {
-    const fileTitle = fileEl.querySelector('.nav-file-title');
+    const fileTitle = fileEl.querySelector('.nav-file-title') as HTMLElement;
     if (!fileTitle) return;
 
-    // Create expand button
+    // Set file title to relative positioning to allow absolute positioning of the button
+    fileTitle.style.position = 'relative';
+    fileTitle.style.paddingRight = '32px'; // Make room for the larger expand button
+
+    // Create expand button - redesigned to be larger and more visible
     const expandButton = document.createElement('div');
     expandButton.className = 'attachmenter-expand-button';
-    expandButton.style.display = 'inline-block';
-    expandButton.style.marginLeft = '0.5em';
+    expandButton.style.position = 'absolute';
+    expandButton.style.right = '4px';
+    expandButton.style.top = '50%';
+    expandButton.style.transform = 'translateY(-50%)';
     expandButton.style.cursor = 'pointer';
-    expandButton.style.opacity = '0.6';
-    expandButton.style.transition = 'opacity 0.2s';
+    expandButton.style.display = 'flex';
+    expandButton.style.alignItems = 'center';
+    expandButton.style.justifyContent = 'center';
+    // Larger size for easier clicking
+    expandButton.style.width = '24px';
+    expandButton.style.height = '24px';
+    expandButton.style.borderRadius = '4px';
+    // Visible background and border
+    expandButton.style.backgroundColor = 'var(--background-secondary)';
+    expandButton.style.border = '1px solid var(--background-modifier-border)';
+    expandButton.style.transition = 'all 0.15s ease';
 
     const isExpanded = this.expandedFiles.has(file.path);
     setIcon(expandButton, isExpanded ? 'chevron-down' : 'chevron-right');
 
     expandButton.onmouseenter = () => {
-      expandButton.style.opacity = '1';
+      expandButton.style.backgroundColor = 'var(--interactive-accent)';
+      expandButton.style.borderColor = 'var(--interactive-accent)';
+      expandButton.style.color = 'var(--text-on-accent)';
     };
     expandButton.onmouseleave = () => {
-      expandButton.style.opacity = '0.6';
+      expandButton.style.backgroundColor = 'var(--background-secondary)';
+      expandButton.style.borderColor = 'var(--background-modifier-border)';
+      expandButton.style.color = 'inherit';
     };
 
     expandButton.onclick = (e) => {
       e.stopPropagation();
-      this.toggleAttachmentTree(file);
+      this.toggleAttachmentPopover(file, fileEl, expandButton);
     };
 
-    // Insert button after file title
+    // Insert button at the end of file title (positioned absolutely on the right)
     fileTitle.appendChild(expandButton);
 
-    // If already expanded, render the tree
+    // If already expanded, show the popover
     if (isExpanded) {
-      this.renderAttachmentTree(file, fileEl);
+      this.showAttachmentPopover(file, fileEl, expandButton);
     }
+  }
+
+  private toggleAttachmentPopover(file: TFile, fileEl: HTMLElement, buttonEl: HTMLElement) {
+    const isExpanded = this.expandedFiles.has(file.path);
+
+    if (isExpanded) {
+      // Collapse - remove popover
+      this.expandedFiles.delete(file.path);
+      const container = this.fileAttachmentContainers.get(file.path);
+      if (container) {
+        container.remove();
+        this.fileAttachmentContainers.delete(file.path);
+      }
+      this.updateExpandButtonIcon(file);
+    } else {
+      // Close all other popovers first (only one popover at a time)
+      this.closeAllPopovers();
+
+      // Expand - show popover
+      this.expandedFiles.add(file.path);
+      this.showAttachmentPopover(file, fileEl, buttonEl);
+      this.updateExpandButtonIcon(file);
+    }
+  }
+
+  private closeAllPopovers() {
+    // Collect paths before clearing
+    const pathsToUpdate = Array.from(this.fileAttachmentContainers.keys());
+
+    // Close all existing popovers
+    for (const [path, container] of this.fileAttachmentContainers) {
+      container.remove();
+    }
+    this.fileAttachmentContainers.clear();
+    this.expandedFiles.clear();
+
+    // Update all expand button icons for the paths that were expanded
+    for (const filePath of pathsToUpdate) {
+      const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
+      if (file instanceof TFile) {
+        this.updateExpandButtonIcon(file);
+      }
+    }
+  }
+
+  private showAttachmentPopover(file: TFile, fileEl: HTMLElement, buttonEl: HTMLElement) {
+    // Remove existing popover for this file if any
+    const existingContainer = this.fileAttachmentContainers.get(file.path);
+    if (existingContainer) {
+      existingContainer.remove();
+    }
+
+    // Create floating popover container
+    const popover = document.createElement('div');
+    popover.className = 'attachmenter-file-attachments attachmenter-popover';
+
+    // Get attachment folder
+    const attachmentFolderPath = this.pathResolver.getAttachmentFolderForNote(file);
+    const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
+
+    if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'attachmenter-no-attachments';
+      emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
+      popover.appendChild(emptyMsg);
+    } else {
+      this.renderAttachmentFolder(attachmentFolder, popover);
+    }
+
+    // Position the popover to the right of the file element
+    const rect = fileEl.getBoundingClientRect();
+    const fileExplorer = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
+    const explorerEl = fileExplorer?.view?.containerEl as HTMLElement;
+
+    if (explorerEl) {
+      const explorerRect = explorerEl.getBoundingClientRect();
+
+      // Append to the file explorer container for proper positioning
+      popover.style.position = 'fixed';
+      popover.style.left = `${explorerRect.right + 5}px`;
+      popover.style.top = `${rect.top}px`;
+      popover.style.maxHeight = '400px';
+      popover.style.maxWidth = '350px';
+      popover.style.overflowY = 'auto';
+      // Use lower z-index so Obsidian modals (which are ~200-300) appear on top
+      popover.style.zIndex = '50';
+
+      document.body.appendChild(popover);
+
+      // Adjust position if it goes off screen
+      const popoverRect = popover.getBoundingClientRect();
+      if (popoverRect.bottom > window.innerHeight) {
+        popover.style.top = `${window.innerHeight - popoverRect.height - 10}px`;
+      }
+      if (popoverRect.right > window.innerWidth) {
+        // Show on left side instead
+        popover.style.left = `${explorerRect.left - popoverRect.width - 5}px`;
+      }
+    }
+
+    this.fileAttachmentContainers.set(file.path, popover);
+
+    // Close popover when clicking outside (but NOT when a modal is open)
+    const closeHandler = (e: MouseEvent) => {
+      // Don't close popover if a modal is currently open
+      if (this.isModalOpen) return;
+
+      if (!popover.contains(e.target as Node) && !buttonEl.contains(e.target as Node)) {
+        this.expandedFiles.delete(file.path);
+        popover.remove();
+        this.fileAttachmentContainers.delete(file.path);
+        this.updateExpandButtonIcon(file);
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+
+    // Delay adding the listener to avoid immediate close
+    setTimeout(() => {
+      document.addEventListener('click', closeHandler);
+    }, 100);
   }
 
   private toggleAttachmentTree(file: TFile) {
@@ -375,100 +564,129 @@ export class FileAttachmentTree {
   }
 
   private renderAttachmentTree(file: TFile, fileEl: HTMLElement) {
-    // Remove existing container if any
-    const existingContainer = this.fileAttachmentContainers.get(file.path);
-    if (existingContainer) {
-      existingContainer.remove();
-    }
+    // Set rendering lock to prevent MutationObserver from triggering refresh
+    this.isRenderingTree = true;
 
-    // Create attachment container
-    const container = document.createElement('div');
-    container.className = 'attachmenter-file-attachments';
-    container.style.marginLeft = '1.5em';
-    container.style.marginTop = '0.25em';
-
-    // Get attachment folder
-    const attachmentFolderPath = this.pathResolver.getAttachmentFolderForNote(file);
-    const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
-
-    if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
-      // No attachment folder
-      const emptyMsg = document.createElement('div');
-      emptyMsg.className = 'attachmenter-no-attachments';
-      emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
-      emptyMsg.style.padding = '0.5em';
-      emptyMsg.style.color = 'var(--text-muted)';
-      emptyMsg.style.fontSize = '0.85em';
-      emptyMsg.style.fontStyle = 'italic';
-      container.appendChild(emptyMsg);
-    } else {
-      // Render attachment folder and files
-      this.renderAttachmentFolder(attachmentFolder, container);
-    }
-
-    // Insert container after file element (as next sibling)
-    // Find the parent container (usually nav-folder-children or nav-files-container)
-    const parent = fileEl.parentElement;
-    if (parent) {
-      // Insert after the file element
-      if (fileEl.nextSibling) {
-        parent.insertBefore(container, fileEl.nextSibling);
-      } else {
-        parent.appendChild(container);
+    try {
+      // Remove existing container if any
+      const existingContainer = this.fileAttachmentContainers.get(file.path);
+      if (existingContainer) {
+        existingContainer.remove();
       }
+
+      // Create attachment container
+      const container = document.createElement('div');
+      container.className = 'attachmenter-file-attachments';
+
+      // Get attachment folder
+      const attachmentFolderPath = this.pathResolver.getAttachmentFolderForNote(file);
+      const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
+
+      if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
+        // No attachment folder
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = 'attachmenter-no-attachments';
+        emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
+        container.appendChild(emptyMsg);
+      } else {
+        // Render attachment folder and files
+        this.renderAttachmentFolder(attachmentFolder, container);
+      }
+
+      // Insert container as sibling AFTER the file element
+      // This keeps the file title (with expand button) at the top
+      const parent = fileEl.parentElement;
+      if (parent) {
+        if (fileEl.nextSibling) {
+          parent.insertBefore(container, fileEl.nextSibling);
+        } else {
+          parent.appendChild(container);
+        }
+      }
+
+      this.fileAttachmentContainers.set(file.path, container);
+    } finally {
+      // Release rendering lock after a short delay to let DOM settle
+      setTimeout(() => {
+        this.isRenderingTree = false;
+      }, 50);
     }
-    this.fileAttachmentContainers.set(file.path, container);
   }
 
+  private readonly MAX_VISIBLE_ATTACHMENTS = 20;
+
   private renderAttachmentFolder(folder: TFolder, container: HTMLElement) {
+    const files = folder.children?.filter(child => child instanceof TFile) as TFile[] || [];
+    const totalCount = files.length;
+
     // Create folder header
     const folderHeader = document.createElement('div');
     folderHeader.className = 'attachmenter-attachment-folder';
-    folderHeader.style.marginBottom = '0.25em';
 
     const folderTitle = document.createElement('div');
     folderTitle.className = 'attachmenter-folder-header';
-    folderTitle.style.display = 'flex';
-    folderTitle.style.alignItems = 'center';
-    folderTitle.style.padding = '0.25em 0';
-    folderTitle.style.color = 'var(--text-muted)';
-    folderTitle.style.fontSize = '0.85em';
 
     const folderIcon = document.createElement('span');
-    folderIcon.className = 'nav-folder-icon';
+    folderIcon.className = 'nav-folder-icon attachmenter-folder-icon';
     setIcon(folderIcon, 'folder');
-    folderIcon.style.marginRight = '0.5em';
 
     const folderName = document.createElement('span');
+    folderName.className = 'attachmenter-folder-name';
     folderName.textContent = folder.name;
+
+    // Add count badge
+    const countBadge = document.createElement('span');
+    countBadge.className = 'attachmenter-count-badge';
+    countBadge.textContent = `${totalCount}`;
 
     folderTitle.appendChild(folderIcon);
     folderTitle.appendChild(folderName);
+    folderTitle.appendChild(countBadge);
     folderHeader.appendChild(folderTitle);
 
-    // Create files list
+    // Create files list container with max height for scroll
     const filesList = document.createElement('div');
     filesList.className = 'attachmenter-folder-files';
-    filesList.style.marginLeft = '1.5em';
 
-    const files = folder.children?.filter(child => child instanceof TFile) || [];
     if (files.length === 0) {
       const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'attachmenter-empty-folder-msg';
       emptyMsg.textContent = t("fileAttachmentTree.emptyFolder");
-      emptyMsg.style.padding = '0.5em';
-      emptyMsg.style.color = 'var(--text-muted)';
-      emptyMsg.style.fontSize = '0.85em';
-      emptyMsg.style.fontStyle = 'italic';
       filesList.appendChild(emptyMsg);
     } else {
       // Get the note file that owns this attachment folder
       const noteFile = this.getNoteFileForFolder(folder);
 
-      files.forEach((attachmentFile) => {
-        if (attachmentFile instanceof TFile) {
-          this.renderAttachmentFile(attachmentFile, filesList, noteFile);
-        }
+      // Only render up to MAX_VISIBLE_ATTACHMENTS initially
+      const visibleFiles = files.slice(0, this.MAX_VISIBLE_ATTACHMENTS);
+      const remainingCount = totalCount - this.MAX_VISIBLE_ATTACHMENTS;
+
+      visibleFiles.forEach((attachmentFile) => {
+        this.renderAttachmentFile(attachmentFile, filesList, noteFile);
       });
+
+      // Add "Load More" button if there are more files
+      if (remainingCount > 0) {
+        const loadMoreContainer = document.createElement('div');
+        loadMoreContainer.className = 'attachmenter-load-more-container';
+
+        const loadMoreBtn = document.createElement('button');
+        loadMoreBtn.className = 'attachmenter-load-more-btn';
+        loadMoreBtn.textContent = t("fileAttachmentTree.loadMore", { count: remainingCount });
+        loadMoreBtn.onclick = (e) => {
+          e.stopPropagation();
+          // Remove the button
+          loadMoreContainer.remove();
+          // Render remaining files
+          const remainingFiles = files.slice(this.MAX_VISIBLE_ATTACHMENTS);
+          remainingFiles.forEach((attachmentFile) => {
+            this.renderAttachmentFile(attachmentFile, filesList, noteFile);
+          });
+        };
+
+        loadMoreContainer.appendChild(loadMoreBtn);
+        filesList.appendChild(loadMoreContainer);
+      }
     }
 
     folderHeader.appendChild(filesList);
@@ -497,25 +715,31 @@ export class FileAttachmentTree {
       this.plugin.app.workspace.openLinkText(file.path, '', true);
     };
 
-    // File icon
+    // File icon - don't shrink
     const fileIcon = document.createElement('span');
     fileIcon.className = 'nav-file-icon';
     setIcon(fileIcon, this.getFileIcon(file.extension));
     fileIcon.style.marginRight = '0.5em';
+    fileIcon.style.flexShrink = '0';
 
-    // File name
+    // File name - with overflow handling for long names
     const fileName = document.createElement('span');
     fileName.textContent = file.name;
     fileName.style.fontSize = '0.85em';
     fileName.style.color = 'var(--text-normal)';
     fileName.style.flex = '1';
+    fileName.style.minWidth = '0'; // Allow flex item to shrink below content size
+    fileName.style.overflow = 'hidden';
+    fileName.style.textOverflow = 'ellipsis';
+    fileName.style.whiteSpace = 'nowrap';
 
-    // Actions container
+    // Actions container - never shrink
     const actions = document.createElement('div');
     actions.className = 'attachmenter-attachment-actions';
     actions.style.display = 'flex';
-    actions.style.gap = '0.5em';
+    actions.style.gap = '0.35em';
     actions.style.marginLeft = '0.5em';
+    actions.style.flexShrink = '0'; // Never shrink actions
 
     // Preview button
     const previewButton = document.createElement('button');
@@ -537,8 +761,19 @@ export class FileAttachmentTree {
       await this.showRenameDialog(file, noteFile);
     };
 
+    // Delete button
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'attachmenter-action-button attachmenter-action-button-danger';
+    deleteButton.title = t("attachmentManager.delete");
+    setIcon(deleteButton, 'trash-2');
+    deleteButton.onclick = (e) => {
+      e.stopPropagation();
+      this.showDeleteConfirmation(file, noteFile);
+    };
+
     actions.appendChild(previewButton);
     actions.appendChild(renameButton);
+    actions.appendChild(deleteButton);
 
     fileEl.appendChild(fileIcon);
     fileEl.appendChild(fileName);
@@ -547,15 +782,39 @@ export class FileAttachmentTree {
   }
 
   private showPreview(file: TFile) {
+    // Prevent multiple modals from opening
+    if (this.isModalOpen) return;
+    this.isModalOpen = true;
+
+    // Note: We DON'T close popovers here - modal has higher z-index and will appear on top
+    // User wants to keep popover open while previewing
+
     const modal = new AttachmentPreviewModal(
       this.plugin.app,
       this.plugin.app.vault,
       file
     );
+
+    // Reset flag when modal closes - with delay to prevent click from closing popover
+    const originalOnClose = modal.onClose.bind(modal);
+    modal.onClose = () => {
+      // Delay resetting the flag to prevent the modal close click from triggering popover close
+      setTimeout(() => {
+        this.isModalOpen = false;
+      }, 200);
+      originalOnClose();
+    };
+
     modal.open();
   }
 
   private async showRenameDialog(file: TFile, noteFile: TFile | null) {
+    // Prevent multiple modals from opening
+    if (this.isModalOpen) return;
+    this.isModalOpen = true;
+
+    // Note: We DON'T close popovers here - modal has higher z-index
+
     const renameHandler = new AttachmentRenameHandler(
       this.plugin.app.vault,
       this.plugin.app.fileManager,
@@ -580,6 +839,55 @@ export class FileAttachmentTree {
         this.refreshAllFiles();
       }
     );
+
+    // Reset flag when modal closes - with delay to prevent click from closing popover
+    const originalOnClose = modal.onClose.bind(modal);
+    modal.onClose = () => {
+      setTimeout(() => {
+        this.isModalOpen = false;
+      }, 200);
+      originalOnClose();
+    };
+
+    modal.open();
+  }
+
+  private showDeleteConfirmation(file: TFile, noteFile: TFile | null) {
+    // Prevent multiple modals from opening
+    if (this.isModalOpen) return;
+    this.isModalOpen = true;
+
+    // Note: We DON'T close popovers here - modal has higher z-index
+
+    const modal = new AttachmentDeleteModal(
+      this.plugin.app,
+      this.plugin.app.vault,
+      file,
+      async () => {
+        // Delete the file
+        await this.plugin.app.vault.trash(file, true);
+
+        // Refresh the attachment tree for the parent note
+        if (noteFile) {
+          const fileEl = this.findFileElement(noteFile);
+          if (fileEl && this.expandedFiles.has(noteFile.path)) {
+            this.renderAttachmentTree(noteFile, fileEl);
+          }
+        }
+        // Refresh all files to update UI
+        this.refreshAllFiles();
+      }
+    );
+
+    // Reset flag when modal closes - with delay to prevent click from closing popover
+    const originalOnClose = modal.onClose.bind(modal);
+    modal.onClose = () => {
+      setTimeout(() => {
+        this.isModalOpen = false;
+      }, 200);
+      originalOnClose();
+    };
+
     modal.open();
   }
 

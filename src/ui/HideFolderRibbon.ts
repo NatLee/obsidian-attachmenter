@@ -83,8 +83,17 @@ export class HideFolderRibbon {
         this.refreshTimeout = window.setTimeout(() => {
           let shouldRefresh = false;
           mutationRecord.forEach((record) => {
-            // Check if mutation is related to file explorer
+            // Skip if mutation is related to attachment tree
             const target = record.target as HTMLElement;
+            if (target?.classList?.contains('attachmenter-file-attachments') ||
+              target?.classList?.contains('attachmenter-attachment-file') ||
+              target?.classList?.contains('attachmenter-attachment-folder') ||
+              target?.classList?.contains('attachmenter-folder-files') ||
+              target?.closest?.('.attachmenter-file-attachments')) {
+              return; // Ignore attachment tree changes
+            }
+
+            // Check if mutation is related to file explorer
             if (
               target?.classList?.contains("nav-folder") ||
               target?.classList?.contains("nav-files-container") ||
@@ -97,6 +106,14 @@ export class HideFolderRibbon {
             // Also check added nodes for new folder elements
             record.addedNodes.forEach((node) => {
               if (node instanceof HTMLElement) {
+                // Skip attachment tree elements
+                if (node.classList?.contains('attachmenter-file-attachments') ||
+                  node.classList?.contains('attachmenter-attachment-file') ||
+                  node.classList?.contains('attachmenter-attachment-folder') ||
+                  node.classList?.contains('attachmenter-folder-files') ||
+                  node.closest?.('.attachmenter-file-attachments')) {
+                  return;
+                }
                 if (node.classList?.contains("nav-folder") || node.querySelector?.(".nav-folder")) {
                   shouldRefresh = true;
                 }
@@ -106,7 +123,7 @@ export class HideFolderRibbon {
           if (shouldRefresh && !this.isRefreshing) {
             this.refreshFolders();
           }
-        }, 10); // Reduced delay for faster response
+        }, 100); // Increased delay to reduce excessive updates
       });
       this.mutationObserver.observe(window.document, {
         childList: true,
@@ -119,6 +136,12 @@ export class HideFolderRibbon {
     this.plugin.app.workspace.onLayoutReady(() => {
       // Execute immediately when layout is ready
       this.refresh(true);
+
+      // Also refresh after delays to catch late-loaded elements
+      // Obsidian's virtual scroll may load elements asynchronously
+      setTimeout(() => this.refreshFolders(), 500);
+      setTimeout(() => this.refreshFolders(), 1500);
+      setTimeout(() => this.refreshFolders(), 3000);
     });
 
     // Listen for vault changes to update section count
@@ -478,33 +501,17 @@ export class HideFolderRibbon {
         if (typeof infinityScroll.compute === 'function') {
           infinityScroll.compute();
         }
-        if (typeof infinityScroll.scrollToTop === 'function') {
-          // Get current scroll position
-          const container = document.querySelector('.nav-files-container') as HTMLElement;
-          const scrollTop = container?.scrollTop || 0;
-          // Force recalculation then restore position
-          requestAnimationFrame(() => {
-            if (container) {
-              container.scrollTop = scrollTop;
-            }
-          });
-        }
       }
     } catch (e) {
       console.debug("Could not call Obsidian internal methods:", e);
     }
 
-    // Fallback: Trigger resize event on workspace to force layout recalculation
+    // Trigger resize event on workspace to force layout recalculation
     requestAnimationFrame(() => {
       try {
         this.plugin.app.workspace.trigger('resize');
       } catch (e) {
         console.debug("Could not trigger resize:", e);
-      }
-
-      // Refresh file attachment tree if enabled
-      if (this.plugin.settings.showFileAttachmentTree && this.plugin.fileAttachmentTree) {
-        this.plugin.fileAttachmentTree.refreshAllFiles();
       }
     });
   }

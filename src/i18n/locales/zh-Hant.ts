@@ -219,7 +219,8 @@ export const zhHant: TranslationMap = {
   // 文件附件樹
   fileAttachmentTree: {
     noAttachments: "沒有附件",
-    emptyFolder: "資料夾是空的"
+    emptyFolder: "資料夾是空的",
+    loadMore: "載入更多 {{count}} 個..."
   },
 
   // 附件管理器
@@ -229,7 +230,12 @@ export const zhHant: TranslationMap = {
     empty: "找不到附件",
     preview: "預覽",
     rename: "重新命名",
+    delete: "刪除",
     openNote: "開啟筆記",
-    previewNotAvailable: "此檔案類型不支援預覽"
+    previewNotAvailable: "此檔案類型不支援預覽",
+    deleteConfirm: "刪除附件",
+    deleteConfirmDesc: "您確定要刪除「{filename}」嗎？此操作無法復原。",
+    deleteSuccess: "附件已成功刪除",
+    deleteFailed: "刪除附件失敗"
   }
 };

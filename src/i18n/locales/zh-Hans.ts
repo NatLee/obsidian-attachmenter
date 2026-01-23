@@ -219,7 +219,8 @@ export const zhHans: TranslationMap = {
   // 文件附件树
   fileAttachmentTree: {
     noAttachments: "没有附件",
-    emptyFolder: "文件夹是空的"
+    emptyFolder: "文件夹是空的",
+    loadMore: "加载更多 {{count}} 个..."
   },
 
   // 附件管理器
@@ -229,7 +230,12 @@ export const zhHans: TranslationMap = {
     empty: "未找到附件",
     preview: "预览",
     rename: "重命名",
+    delete: "删除",
     openNote: "打开笔记",
-    previewNotAvailable: "此文件类型不支持预览"
+    previewNotAvailable: "此文件类型不支持预览",
+    deleteConfirm: "删除附件",
+    deleteConfirmDesc: "您确定要删除「{filename}」吗？此操作无法撤销。",
+    deleteSuccess: "附件已成功删除",
+    deleteFailed: "删除附件失败"
   }
 };
