@@ -21,6 +21,43 @@ export interface ValidationIssue {
   imageLinks?: ImageLink[]; // 找到的圖片連結
 }
 
+export interface DetailedStatistics {
+  // 檔案統計
+  files: {
+    total: number;                    // 總檔案數（md + canvas）
+    withImageLinks: number;           // 有圖片連結的檔案數
+    withoutImageLinks: number;         // 沒有圖片連結的檔案數
+    withAttachments: number;           // 有附件資料夾的檔案數
+    withoutAttachments: number;        // 沒有附件資料夾的檔案數
+  };
+  
+  // 圖片連結統計
+  imageLinks: {
+    total: number;                    // 總圖片連結數
+    resolved: number;                  // 已解析的連結數
+    unresolved: number;               // 未解析的連結數
+    markdown: number;                  // Markdown 格式連結數
+    wiki: number;                     // Wiki 格式連結數
+  };
+  
+  // 附件資料夾統計
+  attachmentFolders: {
+    totalExpected: number;            // 預期應存在的資料夾數
+    existing: number;                  // 實際存在的資料夾數
+    missing: number;                   // 缺失的資料夾數
+    correctlyNamed: number;            // 正確命名的資料夾數
+    incorrectlyNamed: number;          // 錯誤命名的資料夾數
+  };
+  
+  // 問題統計（保留現有）
+  issues: {
+    total: number;
+    missing: number;
+    nameMismatch: number;
+    invalidChars: number;
+  };
+}
+
 export interface ValidationResult {
   totalFiles: number;
   issues: ValidationIssue[];
@@ -29,6 +66,34 @@ export interface ValidationResult {
     nameMismatch: number;
     invalidChars: number;
   };
+  statistics: DetailedStatistics;  // 新增
+}
+
+export interface ChangePlan {
+  folderCreations: Array<{
+    path: string;
+    noteFile: TFile;
+  }>;
+  folderRenames: Array<{
+    from: string;
+    to: string;
+    noteFile: TFile;
+  }>;
+  imageMoves: Array<{
+    imageFile: TFile;
+    fromPath: string;
+    toPath: string;
+    noteFile: TFile;
+    oldLinkMatch: string; // The original link match string
+    altText?: string; // Alt text for the link
+    linkType: "markdown" | "wiki";
+  }>;
+  linkUpdates: Array<{
+    noteFile: TFile;
+    oldLink: string;
+    newLink: string;
+    linkType: "markdown" | "wiki";
+  }>;
 }
 
 export class PathValidator {
@@ -255,6 +320,40 @@ export class PathValidator {
       (file) => file.extension === "md" || file.extension === "canvas"
     );
 
+    // Initialize statistics
+    const statistics: DetailedStatistics = {
+      files: {
+        total: relevantFiles.length,
+        withImageLinks: 0,
+        withoutImageLinks: 0,
+        withAttachments: 0,
+        withoutAttachments: 0,
+      },
+      imageLinks: {
+        total: 0,
+        resolved: 0,
+        unresolved: 0,
+        markdown: 0,
+        wiki: 0,
+      },
+      attachmentFolders: {
+        totalExpected: 0,
+        existing: 0,
+        missing: 0,
+        correctlyNamed: 0,
+        incorrectlyNamed: 0,
+      },
+      issues: {
+        total: 0,
+        missing: 0,
+        nameMismatch: 0,
+        invalidChars: 0,
+      },
+    };
+
+    // Track files with attachments for statistics
+    const filesWithAttachments = new Set<string>();
+
     for (const file of relevantFiles) {
       // Read file content and extract image links
       let content: string;
@@ -267,16 +366,58 @@ export class PathValidator {
 
       const imageLinks = this.extractImageLinks(content, file, app);
 
-      // Only check folder if file has image links
-      if (imageLinks.length === 0) {
-        continue;
+      // Update file statistics
+      if (imageLinks.length > 0) {
+        statistics.files.withImageLinks++;
+      } else {
+        statistics.files.withoutImageLinks++;
       }
 
+      // Update image link statistics
+      statistics.imageLinks.total += imageLinks.length;
+      for (const link of imageLinks) {
+        if (link.resolvedPath) {
+          statistics.imageLinks.resolved++;
+        } else {
+          statistics.imageLinks.unresolved++;
+        }
+        if (link.type === "markdown") {
+          statistics.imageLinks.markdown++;
+        } else if (link.type === "wiki") {
+          statistics.imageLinks.wiki++;
+        }
+      }
+
+      // Get expected folder path
       const expectedFolderPath = pathResolver.getAttachmentFolderForNote(file);
 
       // Check if folder exists
       const folder = vault.getAbstractFileByPath(expectedFolderPath);
       const actualFolderPath = folder instanceof TFolder ? folder.path : null;
+
+      // Update attachment folder statistics
+      if (imageLinks.length > 0) {
+        statistics.attachmentFolders.totalExpected++;
+        if (actualFolderPath) {
+          statistics.attachmentFolders.existing++;
+          filesWithAttachments.add(file.path);
+          
+          // Check if folder name matches expected (after sanitization)
+          const isCorrectlyNamed = normalizePath(actualFolderPath) === normalizePath(expectedFolderPath);
+          if (isCorrectlyNamed) {
+            statistics.attachmentFolders.correctlyNamed++;
+          } else {
+            statistics.attachmentFolders.incorrectlyNamed++;
+          }
+        } else {
+          statistics.attachmentFolders.missing++;
+        }
+      }
+
+      // Only check folder if file has image links
+      if (imageLinks.length === 0) {
+        continue;
+      }
 
       if (!actualFolderPath) {
         // Folder doesn't exist, but file has image links
@@ -317,17 +458,27 @@ export class PathValidator {
       }
     }
 
-    // Calculate summary
+    // Update files with/without attachments statistics
+    statistics.files.withAttachments = filesWithAttachments.size;
+    statistics.files.withoutAttachments = statistics.files.withImageLinks - filesWithAttachments.size;
+
+    // Calculate summary and issue statistics
     const summary = {
       missing: issues.filter((i) => i.issue === "missing").length,
       nameMismatch: issues.filter((i) => i.issue === "name_mismatch").length,
       invalidChars: issues.filter((i) => i.issue === "invalid_chars").length,
     };
 
+    statistics.issues.total = issues.length;
+    statistics.issues.missing = summary.missing;
+    statistics.issues.nameMismatch = summary.nameMismatch;
+    statistics.issues.invalidChars = summary.invalidChars;
+
     return {
       totalFiles: relevantFiles.length,
       issues,
       summary,
+      statistics,
     };
   }
 

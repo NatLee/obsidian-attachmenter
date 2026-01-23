@@ -20,10 +20,6 @@ export const en: TranslationMap = {
       name: "Language",
       desc: "Select the interface language"
     },
-    simpleMode: {
-      name: "Simple mode",
-      desc: "Use per-note attachment folders with a simple naming pattern."
-    },
     folderSuffix: {
       name: "Folder suffix",
       desc: "Suffix for the per-note attachment folder, e.g. `_Attachments`."
@@ -46,6 +42,22 @@ export const en: TranslationMap = {
     aeroFolder: {
       name: "Aero folder style",
       desc: "Apply aero (semi-transparent) style to attachment folders."
+    },
+    showStatusBar: {
+      name: "Show status bar indicator",
+      desc: "Show status bar indicator when attachment folders are hidden."
+    },
+    showRibbonIcon: {
+      name: "Show ribbon icon",
+      desc: "Show ribbon icon in the left sidebar to toggle attachment folder visibility."
+    },
+    showAttachmentManagerButton: {
+      name: "Show attachment manager button",
+      desc: "Show attachment manager button in the file explorer."
+    },
+    showFileAttachmentTree: {
+      name: "Show file attachment tree",
+      desc: "Show expandable attachment tree for each file in the file explorer."
     },
     autoRenameFolder: {
       name: "Auto rename folder",
@@ -70,7 +82,8 @@ export const en: TranslationMap = {
 
   // 命令
   commands: {
-    downloadRemoteImagesActive: "Download remote images in active file"
+    downloadRemoteImagesActive: "Download remote images in active file",
+    openAttachmentFolderManager: "Open attachment folder manager"
   },
 
   // 菜单
@@ -113,7 +126,51 @@ export const en: TranslationMap = {
     invalidCharacters: "Invalid characters: {chars}",
     noteName: "Note name: {name}",
     moreIssues: "... and {count} more issues",
-    fixAll: "Fix all issues"
+    fixAll: "Fix all issues",
+    previewChanges: "Preview changes",
+    executeChanges: "Execute fixes",
+    changePlan: "Change plan",
+    folderCreations: "Folders to be created",
+    folderRenames: "Folders to be renamed",
+    imageMoves: "Images to be moved",
+    linkUpdates: "Links to be updated",
+    fromPath: "From: {path}",
+    toPath: "To: {path}",
+    inFile: "File: {path}",
+    oldLink: "Old link: {link}",
+    newLink: "New link: {link}",
+    confirmExecute: "Confirm and execute",
+    noChanges: "No changes to execute",
+    statistics: {
+      title: "Statistics",
+      files: {
+        title: "Files",
+        withImageLinks: "With image links",
+        withoutImageLinks: "Without image links",
+        withAttachments: "With attachments",
+        withoutAttachments: "Without attachments"
+      },
+      imageLinks: {
+        title: "Image Links",
+        resolved: "Resolved",
+        unresolved: "Unresolved",
+        markdown: "Markdown",
+        wiki: "Wiki"
+      },
+      attachmentFolders: {
+        title: "Attachment Folders",
+        existing: "Existing",
+        missing: "Missing",
+        correctlyNamed: "Correctly named",
+        incorrectlyNamed: "Incorrectly named"
+      },
+      issues: {
+        title: "Issues",
+        missing: "Missing",
+        nameMismatch: "Name mismatch",
+        invalidChars: "Invalid characters"
+      }
+    }
   },
 
   // 粘贴图片管理模态框
@@ -141,5 +198,30 @@ export const en: TranslationMap = {
     renameDesc: "Rename image: {filename}",
     newName: "New name",
     newNameDesc: "Enter the new name for the image (without extension)"
+  },
+
+  // 附件资料夹管理视图
+  attachmentFolderManager: {
+    title: "Attachment Folders",
+    refresh: "Refresh",
+    empty: "No attachment folders found",
+    fileCount: "{count} file"
+  },
+
+  // 文件附件树
+  fileAttachmentTree: {
+    noAttachments: "No attachments",
+    emptyFolder: "Folder is empty"
+  },
+
+  // 附件管理器
+  attachmentManager: {
+    title: "Attachment Manager",
+    refresh: "Refresh",
+    empty: "No attachments found",
+    preview: "Preview",
+    rename: "Rename",
+    openNote: "Open Note",
+    previewNotAvailable: "Preview not available for this file type"
   }
 };

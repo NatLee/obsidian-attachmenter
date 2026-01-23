@@ -20,10 +20,6 @@ export const zhHans: TranslationMap = {
       name: "语言",
       desc: "选择界面语言"
     },
-    simpleMode: {
-      name: "简单模式",
-      desc: "使用每个笔记的附件文件夹，并使用简单的命名模式。"
-    },
     folderSuffix: {
       name: "文件夹后缀",
       desc: "每个笔记附件文件夹的后缀，例如 `_Attachments`。"
@@ -46,6 +42,22 @@ export const zhHans: TranslationMap = {
     aeroFolder: {
       name: "Aero 文件夹样式",
       desc: "对附件文件夹应用 AERO（半透明）样式。"
+    },
+    showStatusBar: {
+      name: "显示状态栏指示器",
+      desc: "当附件文件夹隐藏时显示状态栏指示器。"
+    },
+    showRibbonIcon: {
+      name: "显示 Ribbon 图标",
+      desc: "在左侧边栏显示 Ribbon 图标以切换附件文件夹的可见性。"
+    },
+    showAttachmentManagerButton: {
+      name: "显示附件管理器按钮",
+      desc: "在文件浏览器中显示附件管理器按钮。"
+    },
+    showFileAttachmentTree: {
+      name: "显示文件附件树",
+      desc: "在文件浏览器中为每个文件显示可展开的附件树。"
     },
     autoRenameFolder: {
       name: "自动重命名文件夹",
@@ -70,7 +82,8 @@ export const zhHans: TranslationMap = {
 
   // 命令
   commands: {
-    downloadRemoteImagesActive: "下载当前文件中的远程图片"
+    downloadRemoteImagesActive: "下载当前文件中的远程图片",
+    openAttachmentFolderManager: "打开附件文件夹管理"
   },
 
   // 菜单
@@ -115,7 +128,51 @@ export const zhHans: TranslationMap = {
     invalidCharacters: "无效字符：{chars}",
     noteName: "笔记名称：{name}",
     moreIssues: "... 还有 {count} 个问题",
-    fixAll: "修复所有问题"
+    fixAll: "修复所有问题",
+    previewChanges: "预览变更",
+    executeChanges: "执行修复",
+    changePlan: "变更计划",
+    folderCreations: "将创建的文件夹",
+    folderRenames: "将重命名的文件夹",
+    imageMoves: "将移动的图片",
+    linkUpdates: "将更新的链接",
+    fromPath: "来源：{path}",
+    toPath: "目标：{path}",
+    inFile: "文件：{path}",
+    oldLink: "旧链接：{link}",
+    newLink: "新链接：{link}",
+    confirmExecute: "确认执行",
+    noChanges: "没有需要执行的变更",
+    statistics: {
+      title: "统计资料",
+      files: {
+        title: "文件",
+        withImageLinks: "有图片链接",
+        withoutImageLinks: "没有图片链接",
+        withAttachments: "有附件",
+        withoutAttachments: "没有附件"
+      },
+      imageLinks: {
+        title: "图片链接",
+        resolved: "已解析",
+        unresolved: "未解析",
+        markdown: "Markdown",
+        wiki: "Wiki"
+      },
+      attachmentFolders: {
+        title: "附件文件夹",
+        existing: "存在",
+        missing: "缺失",
+        correctlyNamed: "正确命名",
+        incorrectlyNamed: "错误命名"
+      },
+      issues: {
+        title: "问题",
+        missing: "缺失",
+        nameMismatch: "名称不匹配",
+        invalidChars: "无效字符"
+      }
+    }
   },
 
   // 粘贴图片管理模态框
@@ -149,5 +206,30 @@ export const zhHans: TranslationMap = {
     renameDesc: "重命名图片：{filename}",
     newName: "新名称",
     newNameDesc: "输入图片的新名称（不含扩展名）"
+  },
+
+  // 附件文件夹管理视图
+  attachmentFolderManager: {
+    title: "附件文件夹",
+    refresh: "刷新",
+    empty: "未找到附件文件夹",
+    fileCount: "{count} 个文件"
+  },
+
+  // 文件附件树
+  fileAttachmentTree: {
+    noAttachments: "没有附件",
+    emptyFolder: "文件夹是空的"
+  },
+
+  // 附件管理器
+  attachmentManager: {
+    title: "附件管理器",
+    refresh: "刷新",
+    empty: "未找到附件",
+    preview: "预览",
+    rename: "重命名",
+    openNote: "打开笔记",
+    previewNotAvailable: "此文件类型不支持预览"
   }
 };

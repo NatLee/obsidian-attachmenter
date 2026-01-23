@@ -7,6 +7,8 @@ import { AttachmenterSettings, DEFAULT_SETTINGS } from "./src/model/Settings";
 import { RemoteImageService } from "./src/core/RemoteImageService";
 import { AttachmenterSettingTab } from "./src/ui/SettingTab";
 import { HideFolderRibbon } from "./src/ui/HideFolderRibbon";
+import { FileAttachmentTree } from "./src/ui/FileAttachmentTree";
+import { AttachmentManagerView, ATTACHMENT_MANAGER_VIEW_TYPE } from "./src/ui/AttachmentManagerView";
 import { PasteImageHandler } from "./src/handler/PasteImageHandler";
 import { VaultAttachmentConfiguration } from "./src/components/VaultAttachmentConfiguration";
 import { FileOpenHandler } from "./src/handler/FileOpenHandler";
@@ -18,6 +20,7 @@ export default class AttachmenterPlugin extends Plugin {
   settings: AttachmenterSettings;
   remoteImageService: RemoteImageService;
   hideFolderRibbon: HideFolderRibbon;
+  fileAttachmentTree: FileAttachmentTree;
   pasteImageHandler: PasteImageHandler;
   vaultAttachmentConfiguration: VaultAttachmentConfiguration;
   fileOpenHandler: FileOpenHandler;
@@ -67,6 +70,17 @@ export default class AttachmenterPlugin extends Plugin {
     this.hideFolderRibbon = new HideFolderRibbon(this);
     this.hideFolderRibbon.load();
 
+    this.fileAttachmentTree = new FileAttachmentTree(this);
+    if (this.settings.showFileAttachmentTree) {
+      this.fileAttachmentTree.load();
+    }
+
+    // Register attachment manager view
+    this.registerView(
+      ATTACHMENT_MANAGER_VIEW_TYPE,
+      (leaf) => new AttachmentManagerView(leaf, this)
+    );
+
     this.addSettingTab(new AttachmenterSettingTab(this.app, this));
 
     this.addCommand({
@@ -76,6 +90,7 @@ export default class AttachmenterPlugin extends Plugin {
         await this.remoteImageService.downloadForActiveFile();
       },
     });
+
 
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file) => {
@@ -131,9 +146,11 @@ export default class AttachmenterPlugin extends Plugin {
 
   onunload() {
     this.hideFolderRibbon.unload();
+    this.fileAttachmentTree.unload();
     // Restore the original vault attachment configuration
     this.vaultAttachmentConfiguration.restore();
   }
+
 
   async loadSettings() {
     this.settings = Object.assign(
@@ -149,6 +166,39 @@ export default class AttachmenterPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+
+  /**
+   * Refresh all open AttachmentManagerView instances.
+   * This should be called when settings that affect attachment finding are changed.
+   */
+  refreshAttachmentManagerViews() {
+    try {
+      const leaves = this.app.workspace.getLeavesOfType(ATTACHMENT_MANAGER_VIEW_TYPE);
+      if (leaves.length === 0) {
+        // No views open, nothing to refresh
+        return;
+      }
+
+      // Use requestAnimationFrame and a delay to ensure settings are saved and DOM is ready
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          leaves.forEach(leaf => {
+            try {
+              const view = leaf.view as AttachmentManagerView;
+              if (view && typeof view.render === 'function') {
+                // Force render to use latest settings
+                view.render();
+              }
+            } catch (error) {
+              console.error("Error refreshing attachment manager view:", error);
+            }
+          });
+        }, 200); // Increased delay to ensure settings are fully updated
+      });
+    } catch (error) {
+      console.error("Error refreshing attachment manager views:", error);
+    }
   }
 }
 

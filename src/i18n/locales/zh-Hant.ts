@@ -20,10 +20,6 @@ export const zhHant: TranslationMap = {
       name: "語言",
       desc: "選擇介面語言"
     },
-    simpleMode: {
-      name: "簡單模式",
-      desc: "使用每個筆記的附件資料夾，並使用簡單的命名模式。"
-    },
     folderSuffix: {
       name: "資料夾後綴",
       desc: "每個筆記附件資料夾的後綴，例如 `_Attachments`。"
@@ -46,6 +42,22 @@ export const zhHant: TranslationMap = {
     aeroFolder: {
       name: "Aero 資料夾樣式",
       desc: "對附件資料夾套用 AERO（半透明）樣式。"
+    },
+    showStatusBar: {
+      name: "顯示狀態列指示器",
+      desc: "當附件資料夾隱藏時顯示狀態列指示器。"
+    },
+    showRibbonIcon: {
+      name: "顯示 Ribbon 圖示",
+      desc: "在左側邊欄顯示 Ribbon 圖示以切換附件資料夾的可見性。"
+    },
+    showAttachmentManagerButton: {
+      name: "顯示附件管理器按鈕",
+      desc: "在檔案瀏覽器中顯示附件管理器按鈕。"
+    },
+    showFileAttachmentTree: {
+      name: "顯示檔案附件樹",
+      desc: "在檔案瀏覽器中為每個檔案顯示可展開的附件樹。"
     },
     autoRenameFolder: {
       name: "自動重新命名資料夾",
@@ -70,7 +82,8 @@ export const zhHant: TranslationMap = {
 
   // 命令
   commands: {
-    downloadRemoteImagesActive: "下載目前檔案中的遠端圖片"
+    downloadRemoteImagesActive: "下載目前檔案中的遠端圖片",
+    openAttachmentFolderManager: "開啟附件資料夾管理"
   },
 
   // 菜单
@@ -115,7 +128,51 @@ export const zhHant: TranslationMap = {
     invalidCharacters: "無效字元：{chars}",
     noteName: "筆記名稱：{name}",
     moreIssues: "... 還有 {count} 個問題",
-    fixAll: "修復所有問題"
+    fixAll: "修復所有問題",
+    previewChanges: "預覽變更",
+    executeChanges: "執行修復",
+    changePlan: "變更計劃",
+    folderCreations: "將建立的資料夾",
+    folderRenames: "將重新命名的資料夾",
+    imageMoves: "將移動的圖片",
+    linkUpdates: "將更新的連結",
+    fromPath: "來源：{path}",
+    toPath: "目標：{path}",
+    inFile: "檔案：{path}",
+    oldLink: "舊連結：{link}",
+    newLink: "新連結：{link}",
+    confirmExecute: "確認執行",
+    noChanges: "沒有需要執行的變更",
+    statistics: {
+      title: "統計資料",
+      files: {
+        title: "檔案",
+        withImageLinks: "有圖片連結",
+        withoutImageLinks: "沒有圖片連結",
+        withAttachments: "有附件",
+        withoutAttachments: "沒有附件"
+      },
+      imageLinks: {
+        title: "圖片連結",
+        resolved: "已解析",
+        unresolved: "未解析",
+        markdown: "Markdown",
+        wiki: "Wiki"
+      },
+      attachmentFolders: {
+        title: "附件資料夾",
+        existing: "存在",
+        missing: "缺失",
+        correctlyNamed: "正確命名",
+        incorrectlyNamed: "錯誤命名"
+      },
+      issues: {
+        title: "問題",
+        missing: "缺失",
+        nameMismatch: "名稱不符",
+        invalidChars: "無效字元"
+      }
+    }
   },
 
   // 粘贴图片管理模态框
@@ -149,5 +206,30 @@ export const zhHant: TranslationMap = {
     renameDesc: "重新命名圖片：{filename}",
     newName: "新名稱",
     newNameDesc: "輸入圖片的新名稱（不含副檔名）"
+  },
+
+  // 附件資料夾管理視圖
+  attachmentFolderManager: {
+    title: "附件資料夾",
+    refresh: "重新整理",
+    empty: "找不到附件資料夾",
+    fileCount: "{count} 個檔案"
+  },
+
+  // 文件附件樹
+  fileAttachmentTree: {
+    noAttachments: "沒有附件",
+    emptyFolder: "資料夾是空的"
+  },
+
+  // 附件管理器
+  attachmentManager: {
+    title: "附件管理器",
+    refresh: "重新整理",
+    empty: "找不到附件",
+    preview: "預覽",
+    rename: "重新命名",
+    openNote: "開啟筆記",
+    previewNotAvailable: "此檔案類型不支援預覽"
   }
 };

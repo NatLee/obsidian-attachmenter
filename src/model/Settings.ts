@@ -3,11 +3,9 @@ import type { SupportedLanguage } from "../i18n/index";
 export interface AttachmenterSettings {
   /** Interface language. */
   language: SupportedLanguage;
-  /** Use simple per-note folder mode or advanced templated mode. */
-  simpleMode: boolean;
-  /** Suffix for per-note attachment folder in simple mode, e.g. `_Attachments`. */
+  /** Suffix for per-note attachment folder, e.g. `_Attachments`. */
   defaultFolderSuffix: string;
-  /** Template for attachment base name in simple mode, supports `{notename}` and `{date}`. */
+  /** Template for attachment base name, supports `{notename}` and `{date}`. */
   defaultNameFormat: string;
   /** Moment.js-compatible date format used for `{date}`. */
   dateFormat: string;
@@ -19,11 +17,18 @@ export interface AttachmenterSettings {
   autoRenameFolder: boolean;
   /** Prompt user to rename images when moving them during path check. */
   promptRenameImage: boolean;
+  /** Show status bar indicator when folders are hidden. */
+  showStatusBar: boolean;
+  /** Show ribbon icon in the left sidebar. */
+  showRibbonIcon: boolean;
+  /** Show attachment manager button in file explorer. */
+  showAttachmentManagerButton: boolean;
+  /** Show file attachment tree in file explorer. */
+  showFileAttachmentTree: boolean;
 }
 
 export const DEFAULT_SETTINGS: AttachmenterSettings = {
   language: "en",
-  simpleMode: true,
   defaultFolderSuffix: "_Attachments",
   defaultNameFormat: "{notename}-{date}",
   dateFormat: "YYYYMMDDHHmmssSSS",
@@ -31,5 +36,9 @@ export const DEFAULT_SETTINGS: AttachmenterSettings = {
   aeroFolder: true,
   autoRenameFolder: true,
   promptRenameImage: true,
+  showStatusBar: true,
+  showRibbonIcon: true,
+  showAttachmentManagerButton: true,
+  showFileAttachmentTree: true,
 };
 

@@ -22,8 +22,7 @@ export class PathResolver {
 
   /**
    * Returns the folder path where attachments for a given note should be stored.
-   * For now we only implement the simple mode:
-   *   <note-dir>/<notename><defaultFolderSuffix>
+   * Path format: <note-dir>/<notename><defaultFolderSuffix>
    * 
    * Folder names are sanitized to ensure cross-platform compatibility.
    */

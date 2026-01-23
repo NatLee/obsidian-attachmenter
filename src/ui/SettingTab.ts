@@ -47,46 +47,33 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName(t("settings.simpleMode.name"))
-      .setDesc(t("settings.simpleMode.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.simpleMode)
+      .setName(t("settings.folderSuffix.name"))
+      .setDesc(t("settings.folderSuffix.desc"))
+      .addText((text) =>
+        text
+          .setPlaceholder("_attachments")
+          .setValue(this.plugin.settings.defaultFolderSuffix)
           .onChange(async (value) => {
-            this.plugin.settings.simpleMode = value;
+            this.plugin.settings.defaultFolderSuffix = value || "_attachments";
             await this.plugin.saveSettings();
-            this.display();
+            // Refresh attachment manager views since folder suffix affects attachment finding
+            this.plugin.refreshAttachmentManagerViews();
           })
       );
 
-    if (this.plugin.settings.simpleMode) {
-      new Setting(containerEl)
-        .setName(t("settings.folderSuffix.name"))
-        .setDesc(t("settings.folderSuffix.desc"))
-        .addText((text) =>
-          text
-            .setPlaceholder("_attachments")
-            .setValue(this.plugin.settings.defaultFolderSuffix)
-            .onChange(async (value) => {
-              this.plugin.settings.defaultFolderSuffix = value || "_attachments";
-              await this.plugin.saveSettings();
-            })
-        );
-
-      new Setting(containerEl)
-        .setName(t("settings.attachmentNameFormat.name"))
-        .setDesc(t("settings.attachmentNameFormat.desc"))
-        .addText((text) =>
-          text
-            .setPlaceholder("{notename}-{date}")
-            .setValue(this.plugin.settings.defaultNameFormat)
-            .onChange(async (value) => {
-              this.plugin.settings.defaultNameFormat =
-                value || "{notename}-{date}";
-              await this.plugin.saveSettings();
-            })
-        );
-    }
+    new Setting(containerEl)
+      .setName(t("settings.attachmentNameFormat.name"))
+      .setDesc(t("settings.attachmentNameFormat.desc"))
+      .addText((text) =>
+        text
+          .setPlaceholder("{notename}-{date}")
+          .setValue(this.plugin.settings.defaultNameFormat)
+          .onChange(async (value) => {
+            this.plugin.settings.defaultNameFormat =
+              value || "{notename}-{date}";
+            await this.plugin.saveSettings();
+          })
+      );
 
     new Setting(containerEl)
       .setName(t("settings.dateFormat.name"))
@@ -115,7 +102,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.hideFolder = value;
             await this.plugin.saveSettings();
-            this.plugin.hideFolderRibbon.refresh();
+            // Refresh with folder refresh to update visibility
+            this.plugin.hideFolderRibbon.refresh(true);
           })
       );
 
@@ -128,7 +116,71 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.aeroFolder = value;
             await this.plugin.saveSettings();
-            this.plugin.hideFolderRibbon.refresh();
+            // Refresh with folder refresh to update styling
+            this.plugin.hideFolderRibbon.refresh(true);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t("settings.showStatusBar.name"))
+      .setDesc(t("settings.showStatusBar.desc"))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showStatusBar)
+          .onChange(async (value) => {
+            this.plugin.settings.showStatusBar = value;
+            await this.plugin.saveSettings();
+            // Refresh to update status bar visibility and sync with hideFolder state
+            this.plugin.hideFolderRibbon.refresh(false);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t("settings.showRibbonIcon.name"))
+      .setDesc(t("settings.showRibbonIcon.desc"))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showRibbonIcon)
+          .onChange(async (value) => {
+            this.plugin.settings.showRibbonIcon = value;
+            await this.plugin.saveSettings();
+            // Refresh to update ribbon icon visibility and sync with hideFolder state
+            this.plugin.hideFolderRibbon.refresh(false);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t("settings.showAttachmentManagerButton.name"))
+      .setDesc(t("settings.showAttachmentManagerButton.desc"))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showAttachmentManagerButton)
+          .onChange(async (value) => {
+            this.plugin.settings.showAttachmentManagerButton = value;
+            await this.plugin.saveSettings();
+            // Refresh to update attachment manager button visibility
+            this.plugin.hideFolderRibbon.refresh(false);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t("settings.showFileAttachmentTree.name"))
+      .setDesc(t("settings.showFileAttachmentTree.desc"))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showFileAttachmentTree)
+          .onChange(async (value) => {
+            this.plugin.settings.showFileAttachmentTree = value;
+            await this.plugin.saveSettings();
+            if (value) {
+              this.plugin.fileAttachmentTree.load();
+              // Force refresh after loading to show attachment trees immediately
+              setTimeout(() => {
+                this.plugin.fileAttachmentTree.refreshAllFiles();
+              }, 100);
+            } else {
+              this.plugin.fileAttachmentTree.unload();
+            }
           })
       );
 
