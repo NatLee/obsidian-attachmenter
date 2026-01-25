@@ -65,7 +65,7 @@ When you paste an image, a modal appears with options:
 - **Delete** — Remove the image file and its link from your note
 - **Change Location** — Move the image to a different folder path
 
-<!-- TODO: Add screenshot of paste image modal here -->
+![paste image modal](./docs/paste-image.png)
 
 ### File Attachment Tree
 
@@ -76,7 +76,7 @@ Expandable attachment trees directly in the File Explorer:
 - Shows attachment count badges
 - Performance optimized with lazy loading (20 items initially)
 
-<!-- TODO: Add GIF showing attachment tree interaction here -->
+![attachment tree](./docs/attachment-tree.gif)
 
 ### Attachment Manager View
 
