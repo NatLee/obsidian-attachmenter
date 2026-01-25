@@ -217,6 +217,20 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName(t("settings.renameConfirmation.name"))
+      .setDesc(t("settings.renameConfirmation.desc"))
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption("ask", t("settings.renameConfirmation.ask"))
+          .addOption("always-rename", t("settings.renameConfirmation.alwaysRename"))
+          .setValue(this.plugin.settings.renameConfirmationBehavior)
+          .onChange(async (value) => {
+            this.plugin.settings.renameConfirmationBehavior = value as 'ask' | 'always-rename';
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(containerEl)
       .setName(t("settings.checkPaths.name"))
       .setDesc(t("settings.checkPaths.desc"))
       .addButton((button) =>

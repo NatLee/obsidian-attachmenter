@@ -25,6 +25,8 @@ export interface AttachmenterSettings {
   showAttachmentManagerButton: boolean;
   /** Show file attachment tree in file explorer. */
   showFileAttachmentTree: boolean;
+  /** Rename confirmation behavior: 'ask' = always ask, 'always-rename' = rename directly without asking. */
+  renameConfirmationBehavior: 'ask' | 'always-rename';
 }
 
 export const DEFAULT_SETTINGS: AttachmenterSettings = {
@@ -40,5 +42,6 @@ export const DEFAULT_SETTINGS: AttachmenterSettings = {
   showRibbonIcon: true,
   showAttachmentManagerButton: true,
   showFileAttachmentTree: true,
+  renameConfirmationBehavior: 'ask',
 };
 

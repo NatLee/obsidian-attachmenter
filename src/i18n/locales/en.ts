@@ -77,6 +77,12 @@ export const en: TranslationMap = {
       name: "Check attachment folder paths",
       desc: "Validate all attachment folder paths and check for issues (invalid characters, missing folders, name mismatches).",
       button: "Check paths"
+    },
+    renameConfirmation: {
+      name: "Rename confirmation behavior",
+      desc: "Choose whether to ask for confirmation before renaming attachments.",
+      ask: "Ask each time",
+      alwaysRename: "Always rename directly"
     }
   },
 
@@ -187,6 +193,7 @@ export const en: TranslationMap = {
     deleteConfirm: "Are you sure you want to delete this image?",
     deleteConfirmDesc: "This action cannot be undone.",
     confirmDelete: "Confirm delete",
+    delete: "Delete",
     pastedTitle: "Image pasted",
     keepImage: "Keep image",
     previewAlt: "Pasted image preview"

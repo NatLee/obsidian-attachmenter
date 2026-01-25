@@ -77,6 +77,12 @@ export const zhHans: TranslationMap = {
       name: "检查附件文件夹路径",
       desc: "验证所有附件文件夹路径并检查问题（无效字符、缺少文件夹、名称不匹配）。",
       button: "检查路径"
+    },
+    renameConfirmation: {
+      name: "重命名确认行为",
+      desc: "选择在重命名附件前是否询问确认。",
+      ask: "每次都询问",
+      alwaysRename: "总是直接更名"
     }
   },
 

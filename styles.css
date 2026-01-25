@@ -1011,3 +1011,17 @@
 .attachmenter-folder-note-btn {
   margin-left: 1em;
 }
+
+/* Bug 6 Fix: Make modal content selectable for copying */
+.attachmenter-paste-manager-modal .setting-item-description,
+.attachmenter-paste-manager-modal .attachmenter-file-path span,
+.attachmenter-paste-manager-modal .attachmenter-file-name span,
+.attachmenter-paste-manager-modal .attachmenter-suggested-item code,
+.attachmenter-path-check-modal .attachmenter-issue-detail,
+.attachmenter-path-check-modal .attachmenter-issue-file,
+.attachmenter-modal-info span,
+.attachmenter-modal-info code {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}

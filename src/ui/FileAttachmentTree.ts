@@ -463,6 +463,48 @@ export class FileAttachmentTree {
     }, 100);
   }
 
+  /**
+   * Refresh the content of an existing popover in-place without recreating it.
+   * This prevents the file list from jumping when renaming/deleting attachments.
+   */
+  private refreshPopoverContent(noteFile: TFile) {
+    const existingPopover = this.fileAttachmentContainers.get(noteFile.path);
+    if (!existingPopover || !existingPopover.classList.contains('attachmenter-popover')) {
+      // No popover exists for this file, nothing to refresh
+      return;
+    }
+
+    // Keep popover position styles but clear and re-render content
+    const savedStyles = {
+      position: existingPopover.style.position,
+      left: existingPopover.style.left,
+      top: existingPopover.style.top,
+      maxHeight: existingPopover.style.maxHeight,
+      maxWidth: existingPopover.style.maxWidth,
+      overflowY: existingPopover.style.overflowY,
+      zIndex: existingPopover.style.zIndex,
+    };
+
+    // Clear existing content
+    existingPopover.innerHTML = '';
+
+    // Re-render attachment folder content
+    const attachmentFolderPath = this.pathResolver.getAttachmentFolderForNote(noteFile);
+    const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
+
+    if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'attachmenter-no-attachments';
+      emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
+      existingPopover.appendChild(emptyMsg);
+    } else {
+      this.renderAttachmentFolder(attachmentFolder, existingPopover);
+    }
+
+    // Restore position styles
+    Object.assign(existingPopover.style, savedStyles);
+  }
+
   private toggleAttachmentTree(file: TFile) {
     const isExpanded = this.expandedFiles.has(file.path);
 
@@ -831,12 +873,9 @@ export class FileAttachmentTree {
       defaultName,
       async (newName: string) => {
         await renameHandler.renameAttachment(file, newName, noteFile);
-        // Refresh the attachment tree for this file
-        if (noteFile) {
-          const fileEl = this.findFileElement(noteFile);
-          if (fileEl && this.expandedFiles.has(noteFile.path)) {
-            this.renderAttachmentTree(noteFile, fileEl);
-          }
+        // Refresh the popover content in-place for this file
+        if (noteFile && this.expandedFiles.has(noteFile.path)) {
+          this.refreshPopoverContent(noteFile);
         }
         // Refresh all files to update any changed references
         this.refreshAllFiles();
@@ -870,12 +909,9 @@ export class FileAttachmentTree {
         // Delete the file
         await this.plugin.app.fileManager.trashFile(file);
 
-        // Refresh the attachment tree for the parent note
-        if (noteFile) {
-          const fileEl = this.findFileElement(noteFile);
-          if (fileEl && this.expandedFiles.has(noteFile.path)) {
-            this.renderAttachmentTree(noteFile, fileEl);
-          }
+        // Refresh the popover content in-place for the parent note
+        if (noteFile && this.expandedFiles.has(noteFile.path)) {
+          this.refreshPopoverContent(noteFile);
         }
         // Refresh all files to update UI
         this.refreshAllFiles();

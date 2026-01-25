@@ -77,6 +77,12 @@ export const zhHant: TranslationMap = {
       name: "檢查附件資料夾路徑",
       desc: "驗證所有附件資料夾路徑並檢查問題（無效字元、缺少資料夾、名稱不符）。",
       button: "檢查路徑"
+    },
+    renameConfirmation: {
+      name: "重新命名確認行為",
+      desc: "選擇在重新命名附件前是否詢問確認。",
+      ask: "每次都詢問",
+      alwaysRename: "總是直接更名"
     }
   },
 
