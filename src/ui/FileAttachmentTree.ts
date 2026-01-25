@@ -1,11 +1,13 @@
-import { TFile, TFolder, setIcon, View } from "obsidian";
+import { TFile, TFolder, setIcon, View, Notice } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { PathResolver } from "../path/PathResolver";
 import { t } from "../i18n/index";
 import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
+import { RemoteImagePreviewModal } from "./RemoteImagePreviewModal";
 import { RenameImageModal } from "./RenameImageModal";
 import { AttachmentRenameHandler } from "../handler/AttachmentRenameHandler";
 import { AttachmentDeleteModal } from "./AttachmentDeleteModal";
+import { AttachmentFolderDeleteModal } from "./AttachmentFolderDeleteModal";
 
 interface FileExplorerItem {
   file: TFile;
@@ -211,7 +213,7 @@ export class FileAttachmentTree {
     }
   }
 
-  private processFileElement(fileEl: HTMLElement) {
+  private async processFileElement(fileEl: HTMLElement) {
     if (!this.isEnabled) return;
 
     // Skip if this element or its parent is in a hidden folder
@@ -276,10 +278,70 @@ export class FileAttachmentTree {
       return;
     }
 
+    // Check if attachment folder exists and has content
+    const attachmentFolderPath = this.pathResolver.getAttachmentFolderForNote(file);
+    const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
+    const hasAttachments = !!(attachmentFolder && attachmentFolder instanceof TFolder && attachmentFolder.children.length > 0);
+
+    // Check for remote images using fast regex on cached content
+    // Use cachedRead for performance (reads from cache if available)
+    let hasRemoteImages = false;
+    if (this.plugin.settings.showRemoteHint) {
+      try {
+        const content = await this.plugin.app.vault.cachedRead(file);
+        // Match markdown image syntax with http/https URLs: ![alt](http...)
+        const remoteImageRegex = /!\[[^\]]*\]\(https?:\/\/[^)]+\)/;
+        hasRemoteImages = remoteImageRegex.test(content);
+      } catch {
+        // File might not be readable, skip remote image check
+        hasRemoteImages = false;
+      }
+    }
+
+    const shouldShow = hasAttachments || (this.plugin.settings.showRemoteHint && hasRemoteImages);
+
     // Check if expand button already exists
-    const existingButton = fileEl.querySelector('.attachmenter-expand-button');
+    const existingButton = fileEl.querySelector('.attachmenter-expand-button') as HTMLElement;
     if (existingButton) {
-      // Button exists - check if we need to restore the tree
+      if (!shouldShow) {
+        // Remove button if folder is gone/empty AND no remote images
+        existingButton.remove();
+        fileEl.querySelector('.nav-file-title')?.removeClass('attachmenter-nav-file-title-expanded');
+        // Remove popup if open
+        if (this.expandedFiles.has(file.path)) {
+          const container = this.fileAttachmentContainers.get(file.path);
+          if (container) container.remove();
+          this.expandedFiles.delete(file.path);
+          this.fileAttachmentContainers.delete(file.path);
+        }
+        return;
+      }
+
+      // Button exists - update icon and dataset if attachment type changed
+      const prevHasAttachments = existingButton.dataset.hasAttachments === 'true';
+      const prevHasRemoteImages = existingButton.dataset.hasRemoteImages === 'true';
+
+      if (prevHasAttachments !== hasAttachments || prevHasRemoteImages !== hasRemoteImages) {
+        // Update dataset
+        existingButton.dataset.hasAttachments = hasAttachments.toString();
+        existingButton.dataset.hasRemoteImages = hasRemoteImages.toString();
+
+        // Update icon
+        const isExpanded = this.expandedFiles.has(file.path);
+        let iconName: string;
+        if (isExpanded) {
+          iconName = 'chevron-down';
+        } else if (hasAttachments && hasRemoteImages) {
+          iconName = 'layers';
+        } else if (hasRemoteImages && !hasAttachments) {
+          iconName = 'globe';
+        } else {
+          iconName = 'chevron-right';
+        }
+        setIcon(existingButton, iconName);
+      }
+
+      // Check if we need to restore the tree
       if (this.expandedFiles.has(file.path)) {
         const existingContainer = this.fileAttachmentContainers.get(file.path);
         // Only re-render if container is completely missing or not in DOM
@@ -296,11 +358,13 @@ export class FileAttachmentTree {
       return;
     }
 
-    // Add expand button
-    this.addExpandButtonToFile(fileEl, file);
+    // Add expand button if content exists
+    if (shouldShow) {
+      this.addExpandButtonToFile(fileEl, file, hasAttachments, hasRemoteImages);
+    }
   }
 
-  private addExpandButtonToFile(fileEl: HTMLElement, file: TFile) {
+  private addExpandButtonToFile(fileEl: HTMLElement, file: TFile, hasAttachments: boolean = false, hasRemoteImages: boolean = false) {
     const fileTitle = fileEl.querySelector<HTMLElement>('.nav-file-title');
     if (!fileTitle) return;
 
@@ -314,7 +378,24 @@ export class FileAttachmentTree {
     // Style properties moved to CSS (.attachmenter-expand-button)
 
     const isExpanded = this.expandedFiles.has(file.path);
-    setIcon(expandButton, isExpanded ? 'chevron-down' : 'chevron-right');
+
+    // Determine icon based on attachment type
+    // - Both local and remote: layers icon
+    // - Only remote: globe icon  
+    // - Only local: chevron icon
+    let iconName: string;
+    if (hasAttachments && hasRemoteImages) {
+      iconName = isExpanded ? 'chevron-down' : 'layers';
+    } else if (hasRemoteImages && !hasAttachments) {
+      iconName = isExpanded ? 'chevron-down' : 'globe';
+    } else {
+      iconName = isExpanded ? 'chevron-down' : 'chevron-right';
+    }
+    setIcon(expandButton, iconName);
+
+    // Store attachment type info on button for updateExpandButtonIcon
+    expandButton.dataset.hasAttachments = hasAttachments.toString();
+    expandButton.dataset.hasRemoteImages = hasRemoteImages.toString();
 
     // Hover effects handled by CSS
 
@@ -334,6 +415,7 @@ export class FileAttachmentTree {
 
   private toggleAttachmentPopover(file: TFile, fileEl: HTMLElement, buttonEl: HTMLElement) {
     const isExpanded = this.expandedFiles.has(file.path);
+    const fileTitle = fileEl.querySelector('.nav-file-title') as HTMLElement;
 
     if (isExpanded) {
       // Collapse - remove popover
@@ -343,6 +425,13 @@ export class FileAttachmentTree {
         container.remove();
         this.fileAttachmentContainers.delete(file.path);
       }
+
+      // Remove highlight
+      if (fileTitle) {
+        fileTitle.removeClass('attachmenter-file-highlight');
+        fileTitle.style.removeProperty('--attachmenter-highlight-border');
+      }
+
       this.updateExpandButtonIcon(file);
     } else {
       // Close all other popovers first (only one popover at a time)
@@ -351,6 +440,15 @@ export class FileAttachmentTree {
       // Expand - show popover
       this.expandedFiles.add(file.path);
       this.showAttachmentPopover(file, fileEl, buttonEl);
+
+      // Add highlight if enabled
+      if (this.plugin.settings.enableHighlight && fileTitle) {
+        fileTitle.addClass('attachmenter-file-highlight');
+        // Set dynamic colors
+        const borderColor = this.plugin.settings.highlightBorderColor || 'var(--interactive-accent)';
+        fileTitle.style.setProperty('--attachmenter-highlight-border', borderColor);
+      }
+
       this.updateExpandButtonIcon(file);
     }
   }
@@ -360,11 +458,32 @@ export class FileAttachmentTree {
     const pathsToUpdate = Array.from(this.fileAttachmentContainers.keys());
 
     // Close all existing popovers
-    for (const [, container] of this.fileAttachmentContainers) {
+    for (const [path, container] of this.fileAttachmentContainers) {
       container.remove();
+
+      // Remove highlight from associated file title
+      const file = this.plugin.app.vault.getAbstractFileByPath(path);
+      if (file instanceof TFile) {
+        const fileEl = this.findFileElement(file);
+        if (fileEl) {
+          const fileTitle = fileEl.querySelector('.nav-file-title');
+          if (fileTitle) {
+            fileTitle.removeClass('attachmenter-file-highlight');
+            (fileTitle as HTMLElement).style.removeProperty('--attachmenter-highlight-bg');
+            (fileTitle as HTMLElement).style.removeProperty('--attachmenter-highlight-border');
+          }
+        }
+      }
     }
     this.fileAttachmentContainers.clear();
     this.expandedFiles.clear();
+
+    // Force clear any stray highlights from previously expanded files (safety net)
+    const highlightedElements = document.querySelectorAll('.attachmenter-file-highlight');
+    highlightedElements.forEach(el => {
+      el.removeClass('attachmenter-file-highlight');
+      (el as HTMLElement).style.removeProperty('--attachmenter-highlight-border');
+    });
 
     // Update all expand button icons for the paths that were expanded
     for (const filePath of pathsToUpdate) {
@@ -391,10 +510,16 @@ export class FileAttachmentTree {
     const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
 
     if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
-      const emptyMsg = document.createElement('div');
-      emptyMsg.className = 'attachmenter-no-attachments';
-      emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
-      popover.appendChild(emptyMsg);
+      // No attachment folder - but still try to render remote images if the feature is enabled
+      if (this.plugin.settings.showRemoteHint) {
+        // We need to get the note file and render remote images directly
+        this.renderRemoteImagesOnly(file, popover);
+      } else {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = 'attachmenter-no-attachments';
+        emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
+        popover.appendChild(emptyMsg);
+      }
     } else {
       this.renderAttachmentFolder(attachmentFolder, popover);
     }
@@ -437,6 +562,14 @@ export class FileAttachmentTree {
         this.expandedFiles.delete(file.path);
         popover.remove();
         this.fileAttachmentContainers.delete(file.path);
+
+        // Remove highlight
+        const fileTitle = fileEl.querySelector('.nav-file-title');
+        if (fileTitle) {
+          fileTitle.removeClass('attachmenter-file-highlight');
+          (fileTitle as HTMLElement).style.removeProperty('--attachmenter-highlight-border');
+        }
+
         this.updateExpandButtonIcon(file);
         document.removeEventListener('click', closeHandler);
       }
@@ -553,6 +686,35 @@ export class FileAttachmentTree {
     return null;
   }
 
+  public refreshHighlightStyles() {
+    for (const path of this.expandedFiles) {
+      const file = this.plugin.app.vault.getAbstractFileByPath(path);
+      if (file instanceof TFile) {
+        const fileEl = this.findFileElement(file);
+        if (fileEl) {
+          const fileTitle = fileEl.querySelector('.nav-file-title') as HTMLElement;
+          if (fileTitle) {
+            if (this.plugin.settings.enableHighlight) {
+              fileTitle.addClass('attachmenter-file-highlight');
+
+              // Default to theme accent if empty
+              const borderColor = this.plugin.settings.highlightBorderColor || 'var(--interactive-accent)';
+
+              if (CSS.supports('color', borderColor)) {
+                fileTitle.style.setProperty('--attachmenter-highlight-border', borderColor);
+              } else {
+                fileTitle.style.removeProperty('--attachmenter-highlight-border');
+              }
+            } else {
+              fileTitle.removeClass('attachmenter-file-highlight');
+              fileTitle.style.removeProperty('--attachmenter-highlight-border');
+            }
+          }
+        }
+      }
+    }
+  }
+
   private updateExpandButtonIcon(file: TFile) {
     const fileEl = this.findFileElement(file);
     if (!fileEl) return;
@@ -561,7 +723,30 @@ export class FileAttachmentTree {
     if (!expandButton) return;
 
     const isExpanded = this.expandedFiles.has(file.path);
-    setIcon(expandButton, isExpanded ? 'chevron-down' : 'chevron-right');
+
+    // Toggle expanded class on button for styling
+    if (isExpanded) {
+      expandButton.addClass('is-expanded');
+    } else {
+      expandButton.removeClass('is-expanded');
+    }
+
+    // Read attachment type from stored dataset
+    const hasAttachments = expandButton.dataset.hasAttachments === 'true';
+    const hasRemoteImages = expandButton.dataset.hasRemoteImages === 'true';
+
+    // Determine icon based on attachment type and expanded state
+    let iconName: string;
+    if (isExpanded) {
+      iconName = 'chevron-down';
+    } else if (hasAttachments && hasRemoteImages) {
+      iconName = 'layers';
+    } else if (hasRemoteImages && !hasAttachments) {
+      iconName = 'globe';
+    } else {
+      iconName = 'chevron-right';
+    }
+    setIcon(expandButton, iconName);
   }
 
   private getNoteFileForFolder(folder: TFolder): TFile | null {
@@ -663,6 +848,29 @@ export class FileAttachmentTree {
     const folderName = document.createElement('span');
     folderName.className = 'attachmenter-folder-name';
     folderName.textContent = folder.name;
+    // Feature: Truncate long folder names - Handled by CSS
+
+
+
+    // Feature 3: Delete attachment folder icon
+    const deleteFolderBtn = document.createElement('div');
+    deleteFolderBtn.className = 'attachmenter-folder-delete-btn';
+    deleteFolderBtn.setAttribute('aria-label', t('attachmentManager.deleteFolderConfirm'));
+    setIcon(deleteFolderBtn, 'trash-2');
+    deleteFolderBtn.onclick = (e) => {
+      e.stopPropagation();
+      new AttachmentFolderDeleteModal(
+        this.plugin.app,
+        this.plugin.app.vault,
+        folder,
+        async () => {
+          // Delete all children first (recursive delete)
+          // Or just delete folder? Vault.delete(folder, true) deletes recursive
+          await this.plugin.app.vault.delete(folder, true);
+          // Tree will refresh due to vault events
+        }
+      ).open();
+    };
 
     // Add count badge
     const countBadge = document.createElement('span');
@@ -672,6 +880,32 @@ export class FileAttachmentTree {
     folderTitle.appendChild(folderIcon);
     folderTitle.appendChild(folderName);
     folderTitle.appendChild(countBadge);
+
+    // spacer
+    // Removed spacer.style.flex = '1' because folderName now flexes.
+    // We just need a small gap or let folderName push everything.
+    const spacer = document.createElement('div');
+    spacer.className = 'attachmenter-spacer';
+    // spacer.style.flex = '1'; // Removed
+    folderTitle.appendChild(spacer);
+
+    // Feature: Open in system explorer
+    const openFolderBtn = document.createElement('div');
+    openFolderBtn.className = 'attachmenter-folder-action-btn';
+    openFolderBtn.style.marginRight = '8px'; // Add some spacing
+    openFolderBtn.style.cursor = 'pointer';
+    openFolderBtn.setAttribute('aria-label', t('attachmentManager.openInSystemExplorer'));
+    setIcon(openFolderBtn, 'folder-open');
+    openFolderBtn.onclick = (e) => {
+      e.stopPropagation();
+      // showInFolder reveals the folder in system explorer
+      // @ts-ignore
+      this.plugin.app.showInFolder(folder.path);
+    };
+    folderTitle.appendChild(openFolderBtn);
+
+    folderTitle.appendChild(deleteFolderBtn);
+
     folderHeader.appendChild(folderTitle);
 
     // Create files list container with max height for scroll
@@ -721,6 +955,273 @@ export class FileAttachmentTree {
 
     folderHeader.appendChild(filesList);
     container.appendChild(folderHeader);
+
+    // Feature 1: Render remote images
+    const noteFile = this.getNoteFileForFolder(folder);
+    if (noteFile) {
+      this.renderRemoteImages(noteFile, container);
+    }
+  }
+
+  /**
+   * Render remote images directly when there's no attachment folder.
+   * Shows "no attachments" message if no remote images found.
+   */
+  private async renderRemoteImagesOnly(noteFile: TFile, container: HTMLElement) {
+    // Parse note content for remote images
+    const content = await this.plugin.app.vault.read(noteFile);
+    const regex = /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g;
+
+    const remoteImages: { alt: string, link: string }[] = [];
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      remoteImages.push({
+        alt: match[1],
+        link: match[2]
+      });
+    }
+
+    if (remoteImages.length === 0) {
+      // No remote images found either - show empty message
+      const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'attachmenter-no-attachments';
+      emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
+      container.appendChild(emptyMsg);
+      return;
+    }
+
+    // Create section for remote images
+    const remoteSection = document.createElement('div');
+    remoteSection.className = 'attachmenter-attachment-folder attachmenter-remote-section';
+
+    const sectionHeader = document.createElement('div');
+    sectionHeader.className = 'attachmenter-folder-header';
+
+    const icon = document.createElement('span');
+    icon.className = 'nav-folder-icon attachmenter-folder-icon';
+    setIcon(icon, 'globe');
+
+    const title = document.createElement('span');
+    title.className = 'attachmenter-folder-name';
+    title.textContent = t("fileAttachmentTree.remoteImages");
+
+    const badge = document.createElement('span');
+    badge.className = 'attachmenter-count-badge';
+    badge.textContent = `${remoteImages.length}`;
+
+    sectionHeader.appendChild(icon);
+    sectionHeader.appendChild(title);
+    sectionHeader.appendChild(badge);
+
+    // Add "Download All" button
+    this.renderDownloadAllButton(sectionHeader, remoteImages, noteFile);
+
+    remoteSection.appendChild(sectionHeader);
+
+    const listContainer = document.createElement('div');
+    listContainer.className = 'attachmenter-folder-files';
+
+    remoteImages.forEach(img => {
+      this.renderRemoteImageItem(img, listContainer, noteFile);
+    });
+
+    remoteSection.appendChild(listContainer);
+    container.appendChild(remoteSection);
+  }
+
+  /**
+   * Render "Download All" button for remote images section
+   */
+  private renderDownloadAllButton(container: HTMLElement, images: { alt: string, link: string }[], noteFile: TFile) {
+    if (!this.plugin.remoteImageService) return;
+
+    const downloadAllBtn = document.createElement('div');
+    downloadAllBtn.className = 'attachmenter-folder-action-btn';
+    downloadAllBtn.title = t("menu.downloadRemoteImages");
+    setIcon(downloadAllBtn, 'download-cloud');
+
+    // Style adjustments for header button
+    downloadAllBtn.style.marginLeft = "auto";
+    downloadAllBtn.style.marginRight = "4px";
+
+    downloadAllBtn.onclick = async (e) => {
+      e.stopPropagation();
+
+      // Prevent multiple clicks
+      if (downloadAllBtn.hasClass('is-loading')) return;
+      downloadAllBtn.addClass('is-loading');
+      setIcon(downloadAllBtn, 'loader');
+
+      let successCount = 0;
+      let failCount = 0;
+
+      try {
+        new Notice(t("pathCheck.checking")); // Checking/Downloading message
+
+        for (const img of images) {
+          try {
+            const success = await this.plugin.remoteImageService.downloadRemoteImage(noteFile, img.link, img.alt);
+            if (success) successCount++;
+            else failCount++;
+          } catch (err) {
+            console.error(`Failed to download ${img.link}`, err);
+            failCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          new Notice(t("notices.replacedCount", { count: successCount }));
+          // Tree auto-refreshes on file modification
+        } else {
+          new Notice(t("notices.noRemoteImages"));
+        }
+      } catch (err) {
+        console.error("Error downloading all images", err);
+        new Notice(t("notices.imageDeleteFailed"));
+      } finally {
+        downloadAllBtn.removeClass('is-loading');
+        setIcon(downloadAllBtn, 'download-cloud');
+      }
+    };
+
+    container.appendChild(downloadAllBtn);
+  }
+
+  private async renderRemoteImages(noteFile: TFile, container: HTMLElement) {
+    // Parse note content for remote images
+    const content = await this.plugin.app.vault.read(noteFile);
+    const regex = /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g;
+
+    const remoteImages: { alt: string, link: string }[] = [];
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      remoteImages.push({
+        alt: match[1],
+        link: match[2]
+      });
+    }
+
+    if (remoteImages.length === 0) return;
+
+    // Create separate section for remote images
+    const remoteSection = document.createElement('div');
+    remoteSection.className = 'attachmenter-attachment-folder attachmenter-remote-section';
+
+    const sectionHeader = document.createElement('div');
+    sectionHeader.className = 'attachmenter-folder-header';
+
+    const icon = document.createElement('span');
+    icon.className = 'nav-folder-icon attachmenter-folder-icon';
+    setIcon(icon, 'globe');
+
+    const title = document.createElement('span');
+    title.className = 'attachmenter-folder-name';
+    title.textContent = t("fileAttachmentTree.remoteImages");
+
+    const badge = document.createElement('span');
+    badge.className = 'attachmenter-count-badge';
+    badge.textContent = `${remoteImages.length}`;
+
+    sectionHeader.appendChild(icon);
+    sectionHeader.appendChild(title);
+    sectionHeader.appendChild(badge);
+
+    // Add "Download All" button
+    this.renderDownloadAllButton(sectionHeader, remoteImages, noteFile);
+
+    remoteSection.appendChild(sectionHeader);
+
+    const listContainer = document.createElement('div');
+    listContainer.className = 'attachmenter-folder-files';
+
+    remoteImages.forEach(img => {
+      this.renderRemoteImageItem(img, listContainer, noteFile);
+    });
+
+    remoteSection.appendChild(listContainer);
+    container.appendChild(remoteSection);
+  }
+
+  private renderRemoteImageItem(img: { alt: string, link: string }, container: HTMLElement, noteFile: TFile) {
+    const itemEl = document.createElement('div');
+    itemEl.className = 'attachmenter-attachment-file attachmenter-remote-item';
+
+    // Icon
+    const fileIcon = document.createElement('span');
+    fileIcon.className = 'nav-file-icon';
+    setIcon(fileIcon, 'image-file'); // Generic image icon
+
+    // Name (Link or Alt)
+    const fileName = document.createElement('span');
+    fileName.className = 'attachmenter-tree-file-name';
+    const nameText = img.alt || img.link.split('/').pop() || 'Remote Image';
+    fileName.textContent = nameText;
+    fileName.title = img.link; // Tooltip shows full URL
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'attachmenter-attachment-actions';
+
+    // Preview (Open in modal)
+    const previewBtn = document.createElement('button');
+    previewBtn.className = 'attachmenter-action-button';
+    previewBtn.title = t("attachmentManager.preview");
+    setIcon(previewBtn, 'eye');
+    previewBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.isModalOpen = true;
+      new RemoteImagePreviewModal(
+        this.plugin.app,
+        img.link,
+        img.alt,
+        noteFile,
+        () => {
+          // Delay resetting the flag to prevent the modal close click from triggering popover close
+          setTimeout(() => {
+            this.isModalOpen = false;
+          }, 200);
+        }
+      ).open();
+    };
+
+    // Download
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'attachmenter-action-button';
+    downloadBtn.title = t("fileAttachmentTree.download");
+    setIcon(downloadBtn, 'download');
+    downloadBtn.onclick = async (e) => {
+      e.stopPropagation();
+      // Trigger download action
+      // We need a method in plugin or service to download specific image
+      if (this.plugin.remoteImageService) {
+        downloadBtn.disabled = true;
+        setIcon(downloadBtn, 'loader'); // Show loading state
+
+        try {
+          const success = await this.plugin.remoteImageService.downloadRemoteImage(noteFile, img.link, img.alt);
+          if (success) {
+            new Notice(t("notices.replacedCount", { count: 1 }));
+            // Tree should auto-refresh because file content changed -> vault modify -> refresh
+          } else {
+            new Notice(t("notices.noRemoteImages")); // Or failed msg
+            setIcon(downloadBtn, 'download');
+            downloadBtn.disabled = false;
+          }
+        } catch (err) {
+          console.error(err);
+          setIcon(downloadBtn, 'download');
+          downloadBtn.disabled = false;
+        }
+      }
+    };
+
+    actions.appendChild(previewBtn);
+    actions.appendChild(downloadBtn);
+
+    itemEl.appendChild(fileIcon);
+    itemEl.appendChild(fileName);
+    itemEl.appendChild(actions);
+    container.appendChild(itemEl);
   }
 
   private renderAttachmentFile(file: TFile, container: HTMLElement, noteFile: TFile | null = null) {
@@ -743,6 +1244,7 @@ export class FileAttachmentTree {
 
     // File name - with overflow handling for long names
     const fileName = document.createElement('span');
+    fileName.className = 'attachmenter-tree-file-name';
     fileName.textContent = file.name;
     // Inline styles removed in favor of CSS
 

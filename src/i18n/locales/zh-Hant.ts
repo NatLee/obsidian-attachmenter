@@ -11,11 +11,19 @@ export const zhHant: TranslationMap = {
     close: "關閉",
     file: "檔案",
     path: "路徑",
+    restoreDefault: "恢復預設",
   },
 
   // 设置页面
   settings: {
     title: "Attachmenter 設定",
+    group: {
+      general: "一般設定",
+      attachment: "附件配置",
+      appearance: "外觀與行為",
+      highlight: "高亮設定",
+      tools: "工具與維護"
+    },
     language: {
       name: "語言",
       desc: "選擇介面語言"
@@ -34,6 +42,13 @@ export const zhHant: TranslationMap = {
     },
     folderDisplay: {
       name: "資料夾顯示",
+    },
+    highlight: {
+      name: "高亮展開的檔案",
+      enable: "啟用高亮",
+      enableDesc: "當附件樹展開時，為筆記標題添加左側邊框強調，幫助您識別目前正在操作的檔案。",
+      borderColor: "邊框顏色",
+      borderColorDesc: "左側邊框強調色的 CSS 顏色值。預設為您的主題強調色 (Accent Color)。"
     },
     hideFolder: {
       name: "隱藏附件資料夾",
@@ -83,6 +98,21 @@ export const zhHant: TranslationMap = {
       desc: "選擇在重新命名附件前是否詢問確認。",
       ask: "每次都詢問",
       alwaysRename: "總是直接更名"
+    },
+    showRemoteHint: {
+      name: "顯示遠端圖片提示",
+      desc: "即使筆記只包含遠端圖片（http 開頭的連結），也顯示附件樹展開圖示。"
+    },
+    cleanup: {
+      name: "清理空附件資料夾",
+      desc: "尋找並刪除與後綴設定相符的空附件資料夾。",
+      button: "檢查空資料夾",
+      modalTitle: "空附件資料夾",
+      noEmptyFolders: "未找到空附件資料夾。",
+      foundFolders: "找到 {count} 個空附件資料夾：",
+      deleteAll: "刪除全部",
+      deleteSuccess: "已刪除 {count} 個空資料夾。",
+      deleteFailed: "刪除資料夾失敗。"
     }
   },
 
@@ -226,7 +256,11 @@ export const zhHant: TranslationMap = {
   fileAttachmentTree: {
     noAttachments: "沒有附件",
     emptyFolder: "資料夾是空的",
-    loadMore: "載入更多 {{count}} 個..."
+    loadMore: "載入更多 {{count}} 個...",
+    remoteImages: "遠端圖片",
+    download: "下載",
+    openInBrowser: "在瀏覽器中開啟",
+    remoteLoadError: "載入遠端圖片失敗"
   },
 
   // 附件管理器
@@ -242,6 +276,10 @@ export const zhHant: TranslationMap = {
     deleteConfirm: "刪除附件",
     deleteConfirmDesc: "您確定要刪除「{filename}」嗎？此操作無法復原。",
     deleteSuccess: "附件已成功刪除",
-    deleteFailed: "刪除附件失敗"
+    deleteFailed: "刪除附件失敗",
+    deleteFolderConfirm: "刪除附件資料夾",
+    deleteFolderConfirmDesc: "您確定要刪除資料夾「{foldername}」及其所有 {count} 個檔案嗎？此操作無法復原。",
+    deleteFolderSuccess: "附件資料夾已成功刪除",
+    openInSystemExplorer: "在系統檔案管理員中開啟"
   }
 };

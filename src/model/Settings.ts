@@ -21,12 +21,18 @@ export interface AttachmenterSettings {
   showStatusBar: boolean;
   /** Show ribbon icon in the left sidebar. */
   showRibbonIcon: boolean;
-  /** Show attachment manager button in file explorer. */
+  /** Show attachment manager button in the file explorer. */
   showAttachmentManagerButton: boolean;
-  /** Show file attachment tree in file explorer. */
+  /** Show file attachment tree in the file explorer. */
   showFileAttachmentTree: boolean;
   /** Rename confirmation behavior: 'ask' = always ask, 'always-rename' = rename directly without asking. */
   renameConfirmationBehavior: 'ask' | 'always-rename';
+  /** Show remote hint. */
+  showRemoteHint: boolean;
+  /** Highlight expanded file title. */
+  enableHighlight: boolean;
+  /** Border accent color for expanded file title. */
+  highlightBorderColor: string;
 }
 
 export const DEFAULT_SETTINGS: AttachmenterSettings = {
@@ -43,5 +49,7 @@ export const DEFAULT_SETTINGS: AttachmenterSettings = {
   showAttachmentManagerButton: true,
   showFileAttachmentTree: true,
   renameConfirmationBehavior: 'ask',
+  showRemoteHint: true,
+  enableHighlight: false,
+  highlightBorderColor: "", // Default to empty (Theme Accent)
 };
-

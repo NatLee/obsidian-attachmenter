@@ -121,6 +121,49 @@ export class RemoteImageService {
     }
   }
 
+  /** Download a specific remote image and update the link in the file. */
+  async downloadRemoteImage(file: TFile, link: string, alt: string = "") {
+    if (file.extension !== "md") return false;
+
+    const folderPath = await this.ensureAttachmentFolder(file);
+    let content = await this.vault.read(file);
+
+    // Escape special regex characters in the link
+    const escapedLink = link.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Create specific regex for this link
+    // Matches ![alt](link) or just (link) payload
+    // We try to match the exact context if possible, but matching the URL is key
+    // The link might be in ![alt](url) format
+    const linkRegex = new RegExp(`!\\[(.*?)\\]\\(${escapedLink}\\)`, "g");
+
+    // Check if link exists in content
+    if (!linkRegex.test(content)) {
+      // Try without ! for standard links if needed, but requirements said "remote images" mainly
+      return false;
+    }
+
+    let time = moment();
+    const baseName = this.nameResolver.buildBaseName(file, time);
+    const imagePath = join(folderPath, baseName);
+
+    // Download logic
+    // We reset regex index or use replace
+    let success = false;
+
+    // We need to perform download first
+    const downloadedText = await this.downloadForMarkdown(file, `![${alt}](${link})`, link, alt, imagePath);
+
+    if (downloadedText !== `![${alt}](${link})`) {
+      // It changed, meaning download succeeded and we have a new link
+      content = content.replace(linkRegex, downloadedText);
+      await this.vault.modify(file, content);
+      success = true;
+    }
+
+    return success;
+  }
+
   private async ensureAttachmentFolder(note: TFile): Promise<string> {
     const folderPath = this.pathResolver.getAttachmentFolderForNote(note);
     if (!(await this.adapter.exists(folderPath))) {
@@ -139,7 +182,7 @@ export class RemoteImageService {
     // This regex matches: !\[(alt text)\]\(url\) where alt can be empty and url can contain most characters
     const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
     const matches: Array<{ match: string; alt: string; link: string; index: number }> = [];
-    
+
     // Collect all matches first
     let match;
     const regexCopy = new RegExp(regex.source, regex.flags);
@@ -249,12 +292,12 @@ export class RemoteImageService {
     // Generate markdown link - ensure it's an image link with !
     // generateMarkdownLink(file, sourcePath, subpath?, displayText?)
     let linkText = this.fileManager.generateMarkdownLink(downloaded, note.path, undefined, alt);
-    
+
     // If it's already an image link, return as is
     if (linkText.startsWith("!")) {
       return linkText;
     }
-    
+
     // If it's a regular link, convert to image link
     // Handle both [text](path) and [[path]] formats
     if (linkText.startsWith("[[")) {
@@ -282,7 +325,7 @@ export class RemoteImageService {
 
   private isUrl(url: string): boolean {
     if (!url || url.trim() === "") return false;
-    
+
     // Check if it starts with http:// or https://
     const trimmed = url.trim();
     if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
@@ -293,7 +336,7 @@ export class RemoteImageService {
         return false;
       }
     }
-    
+
     // Also check for data: URLs and other protocols
     if (trimmed.includes("://")) {
       try {
@@ -303,14 +346,14 @@ export class RemoteImageService {
         return false;
       }
     }
-    
+
     return false;
   }
 
   private async download(url: string, imagePath: string) {
     try {
       const response = await requestUrl(url);
-      
+
       if (response.status !== 200) {
         console.error(`Failed to download ${url}: status ${response.status}`);
         return false;
@@ -318,16 +361,16 @@ export class RemoteImageService {
 
       const rawType = response.headers["content-type"] ?? "";
       const contentType = rawType.split(";")[0].trim();
-      
+
       // 如果 Header 沒給出正確的圖片類型，嘗試從 URL 結尾抓取
       let extension = IMAGE_CONTENT_TYPES[contentType];
       if (!extension) {
         const urlPath = new URL(url).pathname;
         const extMatch = urlPath.match(/\.(png|jpg|jpeg|gif|webp|svg|bmp)$/i);
         if (extMatch) {
-            extension = extMatch[1].toLowerCase();
-            // 修正 jpeg 為 jpg 以保持一致 (視需求)
-            if (extension === 'jpeg') extension = 'jpg';
+          extension = extMatch[1].toLowerCase();
+          // 修正 jpeg 為 jpg 以保持一致 (視需求)
+          if (extension === 'jpeg') extension = 'jpg';
         }
       }
 
@@ -342,7 +385,7 @@ export class RemoteImageService {
         fullPath = fullPath.substring(2);
       }
       fullPath = normalizePath(fullPath);
-      
+
       // Check if file already exists and delete it first
       const existingFile = this.vault.getAbstractFileByPath(fullPath);
       if (existingFile instanceof TFile) {
@@ -350,13 +393,13 @@ export class RemoteImageService {
         // Wait a bit after deletion
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      
+
       // response.arrayBuffer is a Promise property in Obsidian's requestUrl response
       // Type assertion needed due to Obsidian's type definitions
       const arrayBuffer = await (response.arrayBuffer as Promise<ArrayBuffer>);
-      
+
       const file = await this.vault.createBinary(fullPath, arrayBuffer);
-      
+
       if (!file) {
         console.warn(`createBinary returned null for ${fullPath}, waiting and retrying...`);
         // Wait longer and retry getting the file - Obsidian may need time to sync

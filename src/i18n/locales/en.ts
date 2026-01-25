@@ -11,11 +11,19 @@ export const en: TranslationMap = {
     close: "Close",
     file: "File",
     path: "Path",
+    restoreDefault: "Restore default",
   },
 
   // 设置页面
   settings: {
     title: "Attachmenter settings",
+    group: {
+      general: "General Settings",
+      attachment: "Attachment Configuration",
+      appearance: "Appearance & Behavior",
+      highlight: "Highlighting",
+      tools: "Tools & Maintenance"
+    },
     language: {
       name: "Language",
       desc: "Select the interface language"
@@ -32,8 +40,20 @@ export const en: TranslationMap = {
       name: "Date format",
       desc: "Moment.js date format used for {date}."
     },
+    showRemoteHint: {
+      name: "Show hint for remote images",
+      desc: "Show the attachment tree expand icon even if the note only contains remote images (links starting with http).",
+    },
     folderDisplay: {
       name: "Folder display",
+    },
+    // Feature: Highlight expanded file
+    highlight: {
+      name: "Highlight expanded file",
+      enable: "Enable highlight",
+      enableDesc: "Add a left border accent to the note's file title when its attachment tree is expanded.",
+      borderColor: "Border Color",
+      borderColorDesc: "CSS color value for the left border accent. Defaults to your theme's accent color.",
     },
     hideFolder: {
       name: "Hide attachment folders",
@@ -83,6 +103,17 @@ export const en: TranslationMap = {
       desc: "Choose whether to ask for confirmation before renaming attachments.",
       ask: "Ask each time",
       alwaysRename: "Always rename directly"
+    },
+    cleanup: {
+      name: "Clean empty attachment folders",
+      desc: "Find and delete empty attachment folders that match the suffix configuration.",
+      button: "Check for empty folders",
+      modalTitle: "Empty attachment folders",
+      noEmptyFolders: "No empty attachment folders found.",
+      foundFolders: "Found {count} empty attachment folders:",
+      deleteAll: "Delete all",
+      deleteSuccess: "Deleted {count} empty folder(s).",
+      deleteFailed: "Failed to delete folders."
     }
   },
 
@@ -215,11 +246,15 @@ export const en: TranslationMap = {
     fileCount: "{count} file"
   },
 
-  // 文件附件树
+  // 文件附件樹
   fileAttachmentTree: {
     noAttachments: "No attachments",
     emptyFolder: "Folder is empty",
-    loadMore: "Load {{count}} more..."
+    loadMore: "Load {{count}} more...",
+    remoteImages: "Remote images",
+    download: "Download",
+    openInBrowser: "Open in browser",
+    remoteLoadError: "Failed to load remote image"
   },
 
   // 附件管理器
@@ -235,6 +270,10 @@ export const en: TranslationMap = {
     deleteConfirm: "Delete attachment",
     deleteConfirmDesc: "Are you sure you want to delete \"{filename}\"? This action cannot be undone.",
     deleteSuccess: "Attachment deleted successfully",
-    deleteFailed: "Failed to delete attachment"
+    deleteFailed: "Failed to delete attachment",
+    deleteFolderConfirm: "Delete attachment folder",
+    deleteFolderConfirmDesc: "Are you sure you want to delete the folder \"{foldername}\" and all its {count} files? This action cannot be undone.",
+    deleteFolderSuccess: "Attachment folder deleted successfully",
+    openInSystemExplorer: "Open in system explorer"
   }
 };

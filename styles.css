@@ -718,6 +718,10 @@
   flex: 1;
   font-weight: 500;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .attachmenter-count-badge {
@@ -789,19 +793,49 @@
   /* Moved from inline */
 }
 
-.attachmenter-attachment-file span:last-child {
+/* File name text truncation - supports both legacy span:last-child and explicit class */
+.attachmenter-attachment-file span:last-child,
+.attachmenter-tree-file-name {
   font-size: 0.85em;
   color: var(--text-normal);
   flex: 1;
-  /* Moved from inline */
-  min-width: 0;
-  /* Moved from inline */
-  overflow: hidden;
-  /* Moved from inline */
-  text-overflow: ellipsis;
-  /* Moved from inline */
   white-space: nowrap;
-  /* Moved from inline */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 150px;
+  /* Limit width to ensure action buttons are visible */
+}
+
+/* Folder Action Buttons (Open in Explorer, Delete) */
+.attachmenter-folder-action-btn,
+.attachmenter-folder-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.15s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+/* Show buttons when hovering folder header */
+.attachmenter-folder-header:hover .attachmenter-folder-action-btn,
+.attachmenter-folder-header:hover .attachmenter-folder-delete-btn {
+  opacity: 1;
+}
+
+.attachmenter-folder-action-btn:hover {
+  color: var(--interactive-accent);
+  background-color: var(--background-modifier-hover);
+}
+
+.attachmenter-folder-delete-btn:hover {
+  color: var(--text-error);
+  /* No background color change - only icon color change like folder icons */
 }
 
 .attachmenter-attachment-actions {
@@ -886,9 +920,9 @@
 }
 
 .attachmenter-expand-button:hover {
-  background-color: var(--interactive-accent);
+  background-color: var(--background-modifier-hover);
   border-color: var(--interactive-accent);
-  color: var(--text-on-accent);
+  color: var(--interactive-accent);
 }
 
 .attachmenter-expand-button svg {
@@ -1081,6 +1115,32 @@
   position: relative;
   padding-right: 32px !important;
   /* Ensure space for button overriding potential theme padding */
+  border-radius: 4px;
+}
+
+/* Highlight style controlled by JS setting */
+.attachmenter-file-highlight {
+  /* background-color removed as per user request */
+  color: var(--text-normal);
+  transition: color 0.2s ease;
+}
+
+/* Add left border accent to highlighted title */
+.attachmenter-file-highlight::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--attachmenter-highlight-border, var(--interactive-accent));
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+/* Expanded Icon Style */
+.attachmenter-expand-button.is-expanded {
+  color: var(--interactive-accent);
 }
 
 /* Manager Button Text */

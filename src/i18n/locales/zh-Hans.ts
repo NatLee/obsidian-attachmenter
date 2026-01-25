@@ -11,11 +11,19 @@ export const zhHans: TranslationMap = {
     close: "关闭",
     file: "文件",
     path: "路径",
+    restoreDefault: "恢复默认",
   },
 
   // 设置页面
   settings: {
     title: "Attachmenter 设置",
+    group: {
+      general: "一般设置",
+      attachment: "附件配置",
+      appearance: "外观与行为",
+      highlight: "高亮设置",
+      tools: "工具与维护"
+    },
     language: {
       name: "语言",
       desc: "选择界面语言"
@@ -34,6 +42,13 @@ export const zhHans: TranslationMap = {
     },
     folderDisplay: {
       name: "文件夹显示",
+    },
+    highlight: {
+      name: "高亮展开的文件",
+      enable: "启用高亮",
+      enableDesc: "当附件树展开时，为笔记标题添加左侧边框强调，帮助您识别当前正在操作的文件。",
+      borderColor: "边框颜色",
+      borderColorDesc: "左侧边框强调色的 CSS 颜色值。默认为您的主题强调色 (Accent Color)。"
     },
     hideFolder: {
       name: "隐藏附件文件夹",
@@ -83,6 +98,21 @@ export const zhHans: TranslationMap = {
       desc: "选择在重命名附件前是否询问确认。",
       ask: "每次都询问",
       alwaysRename: "总是直接更名"
+    },
+    showRemoteHint: {
+      name: "显示远程图片提示",
+      desc: "即使笔记只包含远程图片（http 开头的链接），也显示附件树展开图标。"
+    },
+    cleanup: {
+      name: "清理空附件文件夹",
+      desc: "查找并删除与后缀配置匹配的空附件文件夹。",
+      button: "检查空文件夹",
+      modalTitle: "空附件文件夹",
+      noEmptyFolders: "未找到空附件文件夹。",
+      foundFolders: "找到 {count} 个空附件文件夹：",
+      deleteAll: "删除全部",
+      deleteSuccess: "已删除 {count} 个空文件夹。",
+      deleteFailed: "删除文件夹失败。"
     }
   },
 
@@ -226,7 +256,11 @@ export const zhHans: TranslationMap = {
   fileAttachmentTree: {
     noAttachments: "没有附件",
     emptyFolder: "文件夹是空的",
-    loadMore: "加载更多 {{count}} 个..."
+    loadMore: "加载更多 {{count}} 个...",
+    remoteImages: "远程图片",
+    download: "下载",
+    openInBrowser: "在浏览器中打开",
+    remoteLoadError: "加载远程图片失败"
   },
 
   // 附件管理器
@@ -242,6 +276,10 @@ export const zhHans: TranslationMap = {
     deleteConfirm: "删除附件",
     deleteConfirmDesc: "您确定要删除「{filename}」吗？此操作无法撤销。",
     deleteSuccess: "附件已成功删除",
-    deleteFailed: "删除附件失败"
+    deleteFailed: "删除附件失败",
+    deleteFolderConfirm: "删除附件文件夹",
+    deleteFolderConfirmDesc: "您确定要删除文件夹「{foldername}」及其所有 {count} 个文件吗？此操作无法撤销。",
+    deleteFolderSuccess: "附件文件夹已成功删除",
+    openInSystemExplorer: "在系统文件管理器中打开"
   }
 };
