@@ -685,34 +685,6 @@
   /* Ensure it's above file explorer but below modals (z-index ~40s) */
 }
 
-/* Rename Image Modal Action Buttons */
-.attachmenter-rename-action-buttons {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  gap: 8px;
-  z-index: 10000;
-  background: var(--background-primary);
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--background-modifier-border);
-}
-
-.attachmenter-rename-delete-btn {
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.attachmenter-rename-keep-btn {
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: var(--interactive-success);
-  color: var(--text-on-accent);
-}
 
 .attachmenter-no-attachments {
   padding: 0.5em;

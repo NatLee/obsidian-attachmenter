@@ -5,15 +5,12 @@ import { t } from "../i18n/index";
 export class RenameImageModal extends Modal {
   private newName: string;
   private resolved: boolean = false;
-  private actionButtonsContainer: HTMLElement | null = null;
 
   constructor(
     app: App,
     private imageFile: TFile,
     private defaultName: string,
-    private onConfirm: (newName: string) => Promise<void>,
-    private onDelete?: () => Promise<void>,
-    private onCancel?: () => void
+    private onConfirm: (newName: string) => Promise<void>
   ) {
     super(app);
     this.newName = defaultName;
@@ -68,42 +65,6 @@ export class RenameImageModal extends Modal {
             await this.confirm();
           });
       });
-
-    // Show action buttons outside modal
-    this.showActionButtons();
-  }
-
-  private showActionButtons() {
-    // Create button container outside modal
-    this.actionButtonsContainer = document.createElement("div");
-    this.actionButtonsContainer.className = "attachmenter-rename-action-buttons";
-    this.actionButtonsContainer.className = "attachmenter-rename-action-buttons";
-
-
-    // Delete button (on the left)
-    const deleteButton = document.createElement("button");
-    deleteButton.textContent = t("common.delete");
-    deleteButton.className = "mod-warning attachmenter-rename-delete-btn";
-
-    deleteButton.onclick = async () => {
-      if (this.onDelete) {
-        await this.onDelete();
-      }
-      this.close();
-    };
-
-    // Keep button (on the right, with different color)
-    const keepButton = document.createElement("button");
-    keepButton.textContent = t("common.keep");
-    keepButton.className = "mod-cta attachmenter-rename-keep-btn";
-
-    keepButton.onclick = () => {
-      this.close();
-    };
-
-    this.actionButtonsContainer.appendChild(deleteButton);
-    this.actionButtonsContainer.appendChild(keepButton);
-    document.body.appendChild(this.actionButtonsContainer);
   }
 
   private async confirm() {
@@ -121,10 +82,6 @@ export class RenameImageModal extends Modal {
   private cancel() {
     if (this.resolved) return;
     this.resolved = true;
-
-    if (this.onCancel) {
-      this.onCancel();
-    }
     this.close();
   }
 
@@ -134,13 +91,6 @@ export class RenameImageModal extends Modal {
   }
 
   onClose() {
-    if (!this.resolved && this.onCancel) {
-      this.onCancel();
-    }
-    if (this.actionButtonsContainer) {
-      this.actionButtonsContainer.remove();
-      this.actionButtonsContainer = null;
-    }
     const { contentEl } = this;
     contentEl.empty();
   }
