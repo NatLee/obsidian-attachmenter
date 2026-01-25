@@ -194,29 +194,20 @@ export class HideFolderRibbon {
     section.className = 'attachmenter-folder-section';
 
     // Create button
+    // Create button
     const button = document.createElement('div');
     button.className = 'attachmenter-manager-button';
-    button.style.display = 'flex';
-    button.style.alignItems = 'center';
-    button.style.padding = '0.5em 0.75em';
-    button.style.cursor = 'pointer';
-    button.style.borderRadius = '4px';
-    button.style.margin = '0.25em 0.5em';
-    button.style.transition = 'background-color 0.2s';
+    // Inline styles removed in favor of CSS
+
     button.title = t("attachmentManager.title");
 
-    button.onmouseenter = () => {
-      button.style.backgroundColor = 'var(--background-modifier-hover)';
-    };
-    button.onmouseleave = () => {
-      button.style.backgroundColor = 'transparent';
-    };
+    // Hover effects handled by CSS
 
     // Icon
     const icon = document.createElement('span');
     icon.className = 'attachmenter-manager-button-icon';
     setIcon(icon, 'folder');
-    icon.style.marginRight = '0.5em';
+    // Inline styles removed in favor of CSS
 
     // Text
     const text = document.createElement('span');
@@ -226,9 +217,7 @@ export class HideFolderRibbon {
     // Count
     const count = document.createElement('span');
     count.className = 'attachmenter-folder-count';
-    count.style.marginLeft = '0.5em';
-    count.style.fontSize = '0.85em';
-    count.style.color = 'var(--text-muted)';
+    // Inline styles removed in favor of CSS
 
     button.appendChild(icon);
     button.appendChild(text);
@@ -408,15 +397,15 @@ export class HideFolderRibbon {
               if (shouldHide) {
                 folderElement.addClass("attachmenter-hidden-folder");
                 // Force clear any inline styles that might interfere
-                (folderElement as HTMLElement).style.display = '';
-                (folderElement as HTMLElement).style.visibility = '';
-                (folderElement as HTMLElement).style.height = '';
+                folderElement.style.display = '';
+                folderElement.style.visibility = '';
+                folderElement.style.height = '';
               } else {
                 folderElement.removeClass("attachmenter-hidden-folder");
                 // Clear inline styles when showing
-                (folderElement as HTMLElement).style.display = '';
-                (folderElement as HTMLElement).style.visibility = '';
-                (folderElement as HTMLElement).style.height = '';
+                folderElement.style.display = '';
+                folderElement.style.visibility = '';
+                folderElement.style.height = '';
               }
               // Force immediate reflow
               void folderElement.offsetHeight;
@@ -435,9 +424,9 @@ export class HideFolderRibbon {
             if (folderElement.hasClass("attachmenter-hidden-folder")) {
               hasChanges = true;
               folderElement.removeClass("attachmenter-hidden-folder");
-              (folderElement as HTMLElement).style.display = '';
-              (folderElement as HTMLElement).style.visibility = '';
-              (folderElement as HTMLElement).style.height = '';
+              folderElement.style.display = '';
+              folderElement.style.visibility = '';
+              folderElement.style.height = '';
               void folderElement.offsetHeight;
             }
             if (folderElement.hasClass("attachmenter-aero-folder")) {

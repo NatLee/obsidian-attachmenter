@@ -649,6 +649,8 @@
 
 /* File Attachment Tree Styles */
 /* Container can be inline (sibling) or floating (popover) */
+/* File Attachment Tree Styles */
+/* Container can be inline (sibling) or floating (popover) */
 .attachmenter-file-attachments {
   margin-left: 1.5em;
   margin-top: 0.25em;
@@ -667,6 +669,14 @@
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   min-width: 250px;
+  max-width: 350px;
+  /* Moved from inline */
+  max-height: 400px;
+  /* Moved from inline */
+  overflow-y: auto;
+  /* Moved from inline */
+  z-index: var(--layer-popover);
+  /* Moved from inline (using variable) */
 }
 
 .attachmenter-no-attachments {
@@ -775,23 +785,33 @@
   margin-right: 0.5em;
   display: inline-flex;
   align-items: center;
-}
-
-.attachmenter-attachment-file .nav-file-icon svg {
-  width: 16px;
-  height: 16px;
+  flex-shrink: 0;
+  /* Moved from inline */
 }
 
 .attachmenter-attachment-file span:last-child {
   font-size: 0.85em;
   color: var(--text-normal);
-  word-break: break-word;
+  flex: 1;
+  /* Moved from inline */
+  min-width: 0;
+  /* Moved from inline */
+  overflow: hidden;
+  /* Moved from inline */
+  text-overflow: ellipsis;
+  /* Moved from inline */
+  white-space: nowrap;
+  /* Moved from inline */
 }
 
 .attachmenter-attachment-actions {
   display: flex;
-  gap: 0.5em;
+  gap: 0.35em;
+  /* Updated from inline */
   margin-left: 0.5em;
+  /* Updated from inline */
+  flex-shrink: 0;
+  /* Moved from inline */
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -836,13 +856,39 @@
 
 /* Expand button consistent positioning on the right side */
 .attachmenter-expand-button {
-  display: inline-flex;
+  display: flex;
+  /* Updated from inline */
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  vertical-align: middle;
+  width: 24px;
+  /* Updated from inline */
+  height: 24px;
+  /* Updated from inline */
+  position: absolute;
+  /* Moved from inline */
+  right: 4px;
+  /* Moved from inline */
+  top: 50%;
+  /* Moved from inline */
+  transform: translateY(-50%);
+  /* Moved from inline */
+  cursor: pointer;
+  /* Moved from inline */
+  border-radius: 4px;
+  /* Moved from inline */
+  background-color: var(--background-secondary);
+  /* Moved from inline */
+  border: 1px solid var(--background-modifier-border);
+  /* Moved from inline */
+  transition: all 0.15s ease;
+  /* Moved from inline */
   z-index: 1;
+}
+
+.attachmenter-expand-button:hover {
+  background-color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
 }
 
 .attachmenter-expand-button svg {
@@ -858,6 +904,8 @@
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s;
+  margin: 0.25em 0.5em;
+  /* Moved from inline */
 }
 
 .attachmenter-manager-button:hover {
@@ -867,6 +915,8 @@
 .attachmenter-manager-button-icon {
   display: inline-flex;
   align-items: center;
+  margin-right: 0.5em;
+  /* Moved from inline */
 }
 
 .attachmenter-folder-count {

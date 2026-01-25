@@ -23,7 +23,7 @@ export class AttachmentFolderManagerView extends ItemView {
   }
 
   async onOpen() {
-    await this.render();
+    void this.render();
 
     // Listen for vault changes to refresh the view
     this.registerEvent(

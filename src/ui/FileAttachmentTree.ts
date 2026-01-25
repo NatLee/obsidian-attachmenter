@@ -1,4 +1,4 @@
-import { TFile, TFolder, setIcon } from "obsidian";
+import { TFile, TFolder, setIcon, View } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { PathResolver } from "../path/PathResolver";
 import { t } from "../i18n/index";
@@ -6,6 +6,16 @@ import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
 import { RenameImageModal } from "./RenameImageModal";
 import { AttachmentRenameHandler } from "../handler/AttachmentRenameHandler";
 import { AttachmentDeleteModal } from "./AttachmentDeleteModal";
+
+interface FileExplorerItem {
+  file: TFile;
+  selfEl: HTMLElement;
+}
+
+interface FileExplorerView extends View {
+  fileItems: Record<string, FileExplorerItem>;
+  containerEl: HTMLElement;
+}
 
 export class FileAttachmentTree {
   private expandedFiles: Set<string> = new Set();
@@ -135,7 +145,7 @@ export class FileAttachmentTree {
 
     const fileExplorer = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
     if (fileExplorer?.view) {
-      const view = fileExplorer.view as any;
+      const view = fileExplorer.view as unknown as FileExplorerView;
       const container = view.containerEl;
       if (container) {
         this.mutationObserver.observe(container, {
@@ -162,7 +172,7 @@ export class FileAttachmentTree {
           return;
         }
 
-        const view = fileExplorer.view as any;
+        const view = fileExplorer.view as unknown as FileExplorerView;
         const container = view.containerEl;
         if (!container) {
           this.isProcessing = false;
@@ -181,10 +191,10 @@ export class FileAttachmentTree {
 
         // Find all markdown files in the file explorer
         const fileElements = container.querySelectorAll('.nav-file');
-        fileElements.forEach((fileEl: HTMLElement) => {
+        fileElements.forEach((fileEl) => {
           // Only process if element is visible
-          if (fileEl.offsetParent !== null) {
-            this.processFileElement(fileEl);
+          if ((fileEl as HTMLElement).offsetParent !== null) {
+            this.processFileElement(fileEl as HTMLElement);
           }
         });
 
@@ -223,7 +233,7 @@ export class FileAttachmentTree {
     const fileExplorer = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
     if (!fileExplorer?.view) return;
 
-    const view = fileExplorer.view as any;
+    const view = fileExplorer.view as unknown as FileExplorerView;
 
     // Try to get file from fileItems (most reliable method)
     let file: TFile | null = null;
@@ -231,8 +241,11 @@ export class FileAttachmentTree {
     if (view.fileItems) {
       // Search through fileItems to find the one matching this element
       for (const [path, item] of Object.entries(view.fileItems)) {
-        if (item && (item as any).selfEl === fileEl) {
-          file = this.plugin.app.vault.getAbstractFileByPath(path) as TFile;
+        if (item && item.selfEl === fileEl) {
+          const abstractFile = this.plugin.app.vault.getAbstractFileByPath(path);
+          if (abstractFile instanceof TFile) {
+            file = abstractFile;
+          }
           break;
         }
       }
@@ -295,39 +308,15 @@ export class FileAttachmentTree {
     fileTitle.style.position = 'relative';
     fileTitle.style.paddingRight = '32px'; // Make room for the larger expand button
 
-    // Create expand button - redesigned to be larger and more visible
+    // Create expand button - styled via CSS
     const expandButton = document.createElement('div');
     expandButton.className = 'attachmenter-expand-button';
-    expandButton.style.position = 'absolute';
-    expandButton.style.right = '4px';
-    expandButton.style.top = '50%';
-    expandButton.style.transform = 'translateY(-50%)';
-    expandButton.style.cursor = 'pointer';
-    expandButton.style.display = 'flex';
-    expandButton.style.alignItems = 'center';
-    expandButton.style.justifyContent = 'center';
-    // Larger size for easier clicking
-    expandButton.style.width = '24px';
-    expandButton.style.height = '24px';
-    expandButton.style.borderRadius = '4px';
-    // Visible background and border
-    expandButton.style.backgroundColor = 'var(--background-secondary)';
-    expandButton.style.border = '1px solid var(--background-modifier-border)';
-    expandButton.style.transition = 'all 0.15s ease';
+    // Style properties moved to CSS (.attachmenter-expand-button)
 
     const isExpanded = this.expandedFiles.has(file.path);
     setIcon(expandButton, isExpanded ? 'chevron-down' : 'chevron-right');
 
-    expandButton.onmouseenter = () => {
-      expandButton.style.backgroundColor = 'var(--interactive-accent)';
-      expandButton.style.borderColor = 'var(--interactive-accent)';
-      expandButton.style.color = 'var(--text-on-accent)';
-    };
-    expandButton.onmouseleave = () => {
-      expandButton.style.backgroundColor = 'var(--background-secondary)';
-      expandButton.style.borderColor = 'var(--background-modifier-border)';
-      expandButton.style.color = 'inherit';
-    };
+    // Hover effects handled by CSS
 
     expandButton.onclick = (e) => {
       e.stopPropagation();
@@ -422,11 +411,7 @@ export class FileAttachmentTree {
       popover.style.position = 'fixed';
       popover.style.left = `${explorerRect.right + 5}px`;
       popover.style.top = `${rect.top}px`;
-      popover.style.maxHeight = '400px';
-      popover.style.maxWidth = '350px';
-      popover.style.overflowY = 'auto';
-      // Use lower z-index so Obsidian modals (which are ~200-300) appear on top
-      popover.style.zIndex = '50';
+      // Dimensions and overflow handled by CSS
 
       document.body.appendChild(popover);
 
@@ -533,21 +518,21 @@ export class FileAttachmentTree {
     const fileExplorer = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
     if (!fileExplorer?.view) return null;
 
-    const view = fileExplorer.view as any;
+    const view = fileExplorer.view as unknown as FileExplorerView;
     const container = view.containerEl;
     if (!container) return null;
 
     // Try to find from fileItems first (more reliable)
     if (view.fileItems && view.fileItems[file.path]) {
       const fileItem = view.fileItems[file.path];
-      if (fileItem && (fileItem as any).selfEl) {
-        return (fileItem as any).selfEl as HTMLElement;
+      if (fileItem && fileItem.selfEl) {
+        return fileItem.selfEl;
       }
     }
 
     // Fallback: search through DOM
     const fileElements = container.querySelectorAll('.nav-file');
-    for (const fileEl of fileElements) {
+    for (const fileEl of Array.from(fileElements)) {
       const fileTitle = (fileEl as HTMLElement).querySelector('.nav-file-title');
       if (fileTitle) {
         let filePath = (fileTitle as HTMLElement).getAttribute('data-path');
@@ -741,19 +726,9 @@ export class FileAttachmentTree {
   private renderAttachmentFile(file: TFile, container: HTMLElement, noteFile: TFile | null = null) {
     const fileEl = document.createElement('div');
     fileEl.className = 'attachmenter-attachment-file';
-    fileEl.style.display = 'flex';
-    fileEl.style.alignItems = 'center';
-    fileEl.style.padding = '0.25em 0.5em';
-    fileEl.style.cursor = 'pointer';
-    fileEl.style.borderRadius = '4px';
-    fileEl.style.transition = 'background-color 0.2s';
+    // Inline styles removed in favor of CSS
 
-    fileEl.onmouseenter = () => {
-      fileEl.style.backgroundColor = 'var(--background-modifier-hover)';
-    };
-    fileEl.onmouseleave = () => {
-      fileEl.style.backgroundColor = 'transparent';
-    };
+    // Hover effects handled by CSS
 
     fileEl.onclick = (e) => {
       e.stopPropagation();
@@ -764,27 +739,17 @@ export class FileAttachmentTree {
     const fileIcon = document.createElement('span');
     fileIcon.className = 'nav-file-icon';
     setIcon(fileIcon, this.getFileIcon(file.extension));
-    fileIcon.style.marginRight = '0.5em';
-    fileIcon.style.flexShrink = '0';
+    // Inline styles removed in favor of CSS
 
     // File name - with overflow handling for long names
     const fileName = document.createElement('span');
     fileName.textContent = file.name;
-    fileName.style.fontSize = '0.85em';
-    fileName.style.color = 'var(--text-normal)';
-    fileName.style.flex = '1';
-    fileName.style.minWidth = '0'; // Allow flex item to shrink below content size
-    fileName.style.overflow = 'hidden';
-    fileName.style.textOverflow = 'ellipsis';
-    fileName.style.whiteSpace = 'nowrap';
+    // Inline styles removed in favor of CSS
 
     // Actions container - never shrink
     const actions = document.createElement('div');
     actions.className = 'attachmenter-attachment-actions';
-    actions.style.display = 'flex';
-    actions.style.gap = '0.35em';
-    actions.style.marginLeft = '0.5em';
-    actions.style.flexShrink = '0'; // Never shrink actions
+    // Inline styles removed in favor of CSS
 
     // Preview button
     const previewButton = document.createElement('button');

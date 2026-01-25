@@ -44,7 +44,7 @@ export class AttachmentManagerView extends ItemView {
   }
 
   async onOpen() {
-    await this.render();
+    void this.render();
 
     // Listen for vault changes to refresh the view (with debounce)
     // Note: Manual calls to render() bypass this debounce via isRendering lock
@@ -366,7 +366,7 @@ export class AttachmentManagerView extends ItemView {
           item.noteFile
         );
         // Refresh the view
-        await this.render();
+        void this.render();
         // Refresh file attachment trees
         this.plugin.fileAttachmentTree.refreshAllFiles();
       }
@@ -383,7 +383,7 @@ export class AttachmentManagerView extends ItemView {
         // Delete the file
         await this.plugin.app.fileManager.trashFile(item.file);
         // Refresh the view
-        await this.render();
+        void this.render();
         // Refresh file attachment trees
         this.plugin.fileAttachmentTree.refreshAllFiles();
       }
