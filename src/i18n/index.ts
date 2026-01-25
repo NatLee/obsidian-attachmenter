@@ -2,7 +2,7 @@ import { getLanguage } from "obsidian";
 import { loadAllTranslations } from "./loader";
 
 // 支持的语言类型
-export type SupportedLanguage = "en" | "zh-Hant" | "zh-Hans";
+export type SupportedLanguage = "en" | "zh-Hant" | "zh-Hans" | "ja";
 
 // 翻译键值对接口
 export interface TranslationMap {
@@ -16,7 +16,8 @@ let currentLanguage: SupportedLanguage = "en";
 const translations: Record<SupportedLanguage, TranslationMap> = {
   "en": {},
   "zh-Hant": {},
-  "zh-Hans": {}
+  "zh-Hans": {},
+  "ja": {}
 };
 
 /**
@@ -77,17 +78,17 @@ export function t(key: string, params?: Record<string, string | number>): string
       break;
     }
   }
-  
+
   // 确保返回字符串
   let result = typeof value === "string" ? value : key;
-  
+
   // 处理参数插值
   if (params) {
     Object.entries(params).forEach(([paramKey, paramValue]) => {
       result = result.replace(new RegExp(`\\{${paramKey}\\}`, "g"), String(paramValue));
     });
   }
-  
+
   return result;
 }
 
@@ -102,6 +103,8 @@ export function detectLanguage(): SupportedLanguage {
     return "zh-Hant";
   } else if (language.startsWith("zh")) {
     return "zh-Hans";
+  } else if (language.startsWith("ja")) {
+    return "ja";
   }
   return "en";
 }

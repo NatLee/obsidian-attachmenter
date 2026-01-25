@@ -2,6 +2,7 @@ import { registerTranslations, SupportedLanguage } from "./index";
 import { en } from "./locales/en";
 import { zhHant } from "./locales/zh-Hant";
 import { zhHans } from "./locales/zh-Hans";
+import { ja } from "./locales/ja";
 
 /**
  * 加载所有语言包
@@ -9,12 +10,15 @@ import { zhHans } from "./locales/zh-Hans";
 export function loadAllTranslations() {
   // 注册英文语言包
   registerTranslations("en", en);
-  
+
   // 注册繁体中文语言包
   registerTranslations("zh-Hant", zhHant);
-  
+
   // 注册简体中文语言包
   registerTranslations("zh-Hans", zhHans);
+
+  // 注册日文语言包
+  registerTranslations("ja", ja);
 }
 
 /**
@@ -37,6 +41,11 @@ export function getSupportedLanguages(): Array<{ code: SupportedLanguage; name: 
       code: "zh-Hans",
       name: "Chinese (Simplified)",
       nativeName: "简体中文"
+    },
+    {
+      code: "ja",
+      name: "Japanese",
+      nativeName: "日本語"
     }
   ];
 }
