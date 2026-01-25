@@ -9,6 +9,13 @@ import { AttachmentRenameHandler } from "../handler/AttachmentRenameHandler";
 import { AttachmentDeleteModal } from "./AttachmentDeleteModal";
 import { AttachmentFolderDeleteModal } from "./AttachmentFolderDeleteModal";
 
+// Helper to satisfy linting rules about static styles
+function setCssProps(element: HTMLElement, props: Record<string, string>) {
+  for (const [key, value] of Object.entries(props)) {
+    element.style.setProperty(key, value);
+  }
+}
+
 interface FileExplorerItem {
   file: TFile;
   selfEl: HTMLElement;
@@ -535,18 +542,47 @@ export class FileAttachmentTree {
       // Append to the file explorer container for proper positioning
       popover.addClass('attachmenter-popover-fixed');
       popover.style.left = `${explorerRect.right + 5}px`;
-      popover.style.top = `${rect.top}px`;
-      // Dimensions and overflow handled by CSS
+
+      // Smart Positioning Logic
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const minHeightNeeded = 300; // Minimum height we'd ideally like
+
+      // Check if we should open upwards
+      // Logic: If space below is tight AND space above is larger
+      if (spaceBelow < minHeightNeeded && spaceAbove > spaceBelow) {
+        // Position upwards (align bottom of popover with bottom of file element)
+        setCssProps(popover, {
+          '--popover-top': 'auto',
+          '--popover-bottom': `${window.innerHeight - rect.bottom}px`
+        });
+
+        // Constrain height to available space above (with some margin)
+        // Margin 20px from top of window
+        popover.style.maxHeight = `${rect.bottom - 20}px`;
+
+        // Add class for potential styling hooks
+        popover.addClass('attachmenter-popover-up');
+      } else {
+        // Position downwards (default)
+        setCssProps(popover, {
+          '--popover-top': `${rect.top}px`,
+          '--popover-bottom': 'auto'
+        });
+
+        // Constrain height to available space below (with some margin)
+        // Margin 20px from bottom of window
+        popover.style.maxHeight = `${window.innerHeight - rect.top - 20}px`;
+
+        popover.removeClass('attachmenter-popover-up');
+      }
 
       document.body.appendChild(popover);
 
-      // Adjust position if it goes off screen
+      // Horizontal adjustment if off-screen
       const popoverRect = popover.getBoundingClientRect();
-      if (popoverRect.bottom > window.innerHeight) {
-        popover.style.top = `${window.innerHeight - popoverRect.height - 10}px`;
-      }
       if (popoverRect.right > window.innerWidth) {
-        // Show on left side instead
+        // Show on left side of file explorer instead
         popover.style.left = `${explorerRect.left - popoverRect.width - 5}px`;
       }
     }
@@ -597,10 +633,12 @@ export class FileAttachmentTree {
       position: existingPopover.style.position,
       left: existingPopover.style.left,
       top: existingPopover.style.top,
+      bottom: existingPopover.style.bottom,
       maxHeight: existingPopover.style.maxHeight,
       maxWidth: existingPopover.style.maxWidth,
       overflowY: existingPopover.style.overflowY,
       zIndex: existingPopover.style.zIndex,
+
     };
 
     // Clear existing content
@@ -1170,6 +1208,7 @@ export class FileAttachmentTree {
     setIcon(previewBtn, 'eye');
     previewBtn.onclick = (e) => {
       e.stopPropagation();
+      if (this.isModalOpen) return;
       this.isModalOpen = true;
       new RemoteImagePreviewModal(
         this.plugin.app,

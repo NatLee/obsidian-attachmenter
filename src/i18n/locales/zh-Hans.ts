@@ -19,9 +19,9 @@ export const zhHans: TranslationMap = {
     title: "Attachmenter 设置",
     group: {
       general: "一般设置",
-      attachment: "附件配置",
-      appearance: "外观与行为",
-      highlight: "高亮设置",
+      management: "命名与存储规则",
+      appearance: "界面整合",
+      view: "附件树视图",
       tools: "工具与维护"
     },
     language: {

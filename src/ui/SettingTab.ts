@@ -32,9 +32,9 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       .setHeading();
 
     // =========================================================================
-    // 1. General Settings (一般設定)
+    // 0. General Settings
     // =========================================================================
-    new Setting(containerEl).setName("").setHeading();
+    new Setting(containerEl).setName(t("settings.group.general")).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.language.name"))
@@ -53,24 +53,10 @@ export class AttachmenterSettingTab extends PluginSettingTab {
         });
       });
 
-    new Setting(containerEl)
-      .setName(t("settings.dateFormat.name"))
-      .setDesc(t("settings.dateFormat.desc"))
-      .addMomentFormat((component: MomentFormatComponent) => {
-        component
-          .setPlaceholder(DEFAULT_DATE_FORMAT)
-          .setValue(this.plugin.settings.dateFormat)
-          .onChange(async (value) => {
-            this.plugin.settings.dateFormat =
-              value || DEFAULT_DATE_FORMAT;
-            await this.plugin.saveSettings();
-          });
-      });
-
     // =========================================================================
-    // 2. Attachment Configuration (附件配置)
+    // 1. Management Rules
     // =========================================================================
-    new Setting(containerEl).setName("").setHeading();
+    new Setting(containerEl).setName(t("settings.group.management")).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.folderSuffix.name"))
@@ -102,6 +88,20 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName(t("settings.dateFormat.name"))
+      .setDesc(t("settings.dateFormat.desc"))
+      .addMomentFormat((component: MomentFormatComponent) => {
+        component
+          .setPlaceholder(DEFAULT_DATE_FORMAT)
+          .setValue(this.plugin.settings.dateFormat)
+          .onChange(async (value) => {
+            this.plugin.settings.dateFormat =
+              value || DEFAULT_DATE_FORMAT;
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(containerEl)
       .setName(t("settings.autoRenameAttachmentFolder.name"))
       .setDesc(t("settings.autoRenameAttachmentFolder.desc"))
       .addToggle((toggle) =>
@@ -127,10 +127,64 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           });
       });
 
+    new Setting(containerEl)
+      .setName(t("settings.promptRenameImage.name"))
+      .setDesc(t("settings.promptRenameImage.desc"))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.promptRenameImage)
+          .onChange(async (value) => {
+            this.plugin.settings.promptRenameImage = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
     // =========================================================================
-    // 3. Appearance & Behavior (外觀與行為)
+    // 2. Interface Integration
     // =========================================================================
-    new Setting(containerEl).setName("").setHeading();
+    new Setting(containerEl).setName(t("settings.group.appearance")).setHeading();
+
+    new Setting(containerEl)
+      .setName(t("settings.showRibbonIcon.name"))
+      .setDesc(t("settings.showRibbonIcon.desc"))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showRibbonIcon)
+          .onChange(async (value) => {
+            this.plugin.settings.showRibbonIcon = value;
+            await this.plugin.saveSettings();
+            // Refresh to update ribbon icon visibility and sync with hideFolder state
+            this.plugin.hideFolderRibbon.refresh(false);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t("settings.showStatusBar.name"))
+      .setDesc(t("settings.showStatusBar.desc"))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showStatusBar)
+          .onChange(async (value) => {
+            this.plugin.settings.showStatusBar = value;
+            await this.plugin.saveSettings();
+            // Refresh to update status bar visibility and sync with hideFolder state
+            this.plugin.hideFolderRibbon.refresh(false);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t("settings.showAttachmentManagerButton.name"))
+      .setDesc(t("settings.showAttachmentManagerButton.desc"))
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showAttachmentManagerButton)
+          .onChange(async (value) => {
+            this.plugin.settings.showAttachmentManagerButton = value;
+            await this.plugin.saveSettings();
+            // Refresh to update attachment manager button visibility
+            this.plugin.hideFolderRibbon.refresh(false);
+          })
+      );
 
     new Setting(containerEl)
       .setName(t("settings.hideFolder.name"))
@@ -160,47 +214,10 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           })
       );
 
-    new Setting(containerEl)
-      .setName(t("settings.showStatusBar.name"))
-      .setDesc(t("settings.showStatusBar.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showStatusBar)
-          .onChange(async (value) => {
-            this.plugin.settings.showStatusBar = value;
-            await this.plugin.saveSettings();
-            // Refresh to update status bar visibility and sync with hideFolder state
-            this.plugin.hideFolderRibbon.refresh(false);
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.showRibbonIcon.name"))
-      .setDesc(t("settings.showRibbonIcon.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showRibbonIcon)
-          .onChange(async (value) => {
-            this.plugin.settings.showRibbonIcon = value;
-            await this.plugin.saveSettings();
-            // Refresh to update ribbon icon visibility and sync with hideFolder state
-            this.plugin.hideFolderRibbon.refresh(false);
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.showAttachmentManagerButton.name"))
-      .setDesc(t("settings.showAttachmentManagerButton.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showAttachmentManagerButton)
-          .onChange(async (value) => {
-            this.plugin.settings.showAttachmentManagerButton = value;
-            await this.plugin.saveSettings();
-            // Refresh to update attachment manager button visibility
-            this.plugin.hideFolderRibbon.refresh(false);
-          })
-      );
+    // =========================================================================
+    // 3. Attachment Tree View
+    // =========================================================================
+    new Setting(containerEl).setName(t("settings.group.view")).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.showFileAttachmentTree.name"))
@@ -240,23 +257,6 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName(t("settings.promptRenameImage.name"))
-      .setDesc(t("settings.promptRenameImage.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.promptRenameImage)
-          .onChange(async (value) => {
-            this.plugin.settings.promptRenameImage = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    // =========================================================================
-    // 4. Highlighting (高亮設定)
-    // =========================================================================
-    new Setting(containerEl).setName("").setHeading();
-
-    new Setting(containerEl)
       .setName(t("settings.highlight.enable"))
       .setDesc(t("settings.highlight.enableDesc"))
       .addToggle((toggle) =>
@@ -284,9 +284,9 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     );
 
     // =========================================================================
-    // 5. Tools & Maintenance (工具與維護)
+    // 4. Tools & Maintenance
     // =========================================================================
-    new Setting(containerEl).setName("").setHeading();
+    new Setting(containerEl).setName(t("settings.group.tools")).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.checkPaths.name"))

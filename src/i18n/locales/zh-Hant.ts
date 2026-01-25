@@ -19,9 +19,9 @@ export const zhHant: TranslationMap = {
     title: "Attachmenter 設定",
     group: {
       general: "一般設定",
-      attachment: "附件配置",
-      appearance: "外觀與行為",
-      highlight: "高亮設定",
+      management: "命名與儲存規則",
+      appearance: "介面整合",
+      view: "附件樹視圖",
       tools: "工具與維護"
     },
     language: {

@@ -672,11 +672,46 @@
   max-width: 350px;
   /* Moved from inline */
   max-height: 400px;
+
+  /* Dynamic positioning using CSS variables */
+  top: var(--popover-top, auto);
+  bottom: var(--popover-bottom, auto);
+
   /* Moved from inline */
   overflow-y: auto;
   /* Moved from inline */
-  z-index: var(--layer-popover);
-  /* Moved from inline (using variable) */
+  /* Moved from inline */
+  z-index: 8 !important;
+  /* Ensure it's above file explorer but below modals (z-index ~40s) */
+}
+
+/* Rename Image Modal Action Buttons */
+.attachmenter-rename-action-buttons {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 10000;
+  background: var(--background-primary);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.attachmenter-rename-delete-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.attachmenter-rename-keep-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: var(--interactive-success);
+  color: var(--text-on-accent);
 }
 
 .attachmenter-no-attachments {
@@ -808,15 +843,21 @@
 
 /* Actions in tree */
 .attachmenter-attachment-actions {
-  display: none;
-  /* Hidden by default */
-  margin-left: auto;
+  display: flex !important;
+  /* Always flex to reserve space */
+  visibility: hidden;
+  /* Hidden but takes space */
+  opacity: 0;
+  margin-left: auto !important;
+  /* Force to right */
   gap: 2px;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .attachmenter-attachment-file:hover .attachmenter-attachment-actions,
 .attachmenter-remote-item:hover .attachmenter-attachment-actions {
-  display: flex;
+  visibility: visible;
+  opacity: 1;
   /* Shown on hover */
 }
 
@@ -845,7 +886,7 @@
 
 .attachmenter-action-button-danger:hover {
   color: var(--text-error);
-  background-color: var(--background-modifier-error-hover);
+  background-color: var(--background-modifier-hover);
 }
 
 /* Spacer */
@@ -891,16 +932,34 @@
   opacity: 0.7;
   display: flex;
   align-items: center;
+  padding: 2px;
 }
 
 .attachmenter-folder-action-btn:hover {
-  opacity: 1;
-  color: var(--interactive-accent);
+  opacity: 1 !important;
+  color: var(--interactive-accent) !important;
+  background-color: var(--background-modifier-hover) !important;
+  border-radius: 4px;
 }
 
 .attachmenter-download-btn {
   margin-left: auto;
   margin-right: 4px;
+}
+
+/* Specific class for folder delete button */
+.attachmenter-folder-delete-btn {
+  margin-right: 8px;
+  cursor: pointer;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.attachmenter-folder-delete-btn:hover {
+  opacity: 1 !important;
+  color: var(--text-error) !important;
 }
 
 /* Setting Tab Styles */
@@ -920,4 +979,215 @@
 
 .attachmenter-word-break-all {
   word-break: break-all;
+}
+
+/* Attachment Tree Expand Button */
+.attachmenter-nav-file-title-expanded {
+  position: relative !important;
+  padding-right: 24px !important;
+  /* Make room for the button */
+}
+
+.attachmenter-expand-button {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.7;
+  /* Visible by default */
+  transition: opacity 0.2s ease;
+  z-index: 10;
+  color: var(--text-muted);
+
+  /* Box style */
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  margin: 2px 2px 2px 0;
+  height: auto;
+  background-color: var(--background-primary);
+}
+
+.nav-file-title:hover .attachmenter-expand-button,
+.attachmenter-expand-button.is-expanded {
+  opacity: 1;
+}
+
+.attachmenter-expand-button:hover {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+.attachmenter-expand-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Attachment Manager View Styles */
+.attachmenter-manager-view {
+  padding: 1em;
+}
+
+.attachmenter-manager-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5em;
+  padding-bottom: 1em;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.attachmenter-manager-header h2 {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.attachmenter-manager-count {
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin-left: 0.5em;
+}
+
+.attachmenter-manager-empty {
+  text-align: center;
+  padding: 3em;
+  color: var(--text-muted);
+  font-style: italic;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px dashed var(--background-modifier-border);
+}
+
+.attachmenter-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+}
+
+.attachmenter-manager-folder-section {
+  background: var(--background-primary);
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+  overflow: hidden;
+}
+
+.attachmenter-manager-folder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75em 1em;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.attachmenter-manager-folder-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  color: var(--text-normal);
+  word-break: break-all;
+}
+
+.attachmenter-folder-note-btn {
+  font-size: 0.8em;
+  padding: 0.4em 0.8em;
+}
+
+.attachmenter-manager-attachments {
+  padding: 0.5em;
+}
+
+.attachmenter-manager-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75em;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.attachmenter-manager-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.attachmenter-manager-item-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  flex: 1;
+  min-width: 0;
+  margin-right: 1em;
+}
+
+.attachmenter-manager-item-icon {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.attachmenter-manager-item-name {
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachmenter-manager-item-actions {
+  display: flex;
+  gap: 0.5em;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.attachmenter-manager-item:hover .attachmenter-manager-item-actions {
+  opacity: 1;
+}
+
+.attachmenter-manager-item-actions button {
+  font-size: 0.8em;
+  padding: 0.3em 0.8em;
+  height: auto;
+}
+
+/* Attachment Manager Button in File Explorer */
+.attachmenter-manager-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  margin: 0 8px 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.attachmenter-manager-button:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.attachmenter-manager-button-icon {
+  display: flex;
+  align-items: center;
+  color: inherit;
+}
+
+.attachmenter-manager-button-text {
+  flex: 1;
+  margin-left: 8px;
+  font-size: 0.9em;
+  color: inherit;
+}
+
+/* .attachmenter-folder-count is already defined but we can ensure it inherits color */
+.attachmenter-folder-count {
+  font-size: 0.8em;
+  color: inherit;
+  opacity: 0.8;
 }

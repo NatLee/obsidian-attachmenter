@@ -19,9 +19,9 @@ export const en: TranslationMap = {
     title: "Attachmenter settings",
     group: {
       general: "General Settings",
-      attachment: "Attachment Configuration",
-      appearance: "Appearance & Behavior",
-      highlight: "Highlighting",
+      management: "Management Rules",
+      appearance: "Interface Integration",
+      view: "Attachment Tree View",
       tools: "Tools & Maintenance"
     },
     language: {
