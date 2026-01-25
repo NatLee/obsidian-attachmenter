@@ -7,6 +7,8 @@ import {
   Setting,
   TFile,
   Vault,
+  Workspace,
+  TextFileView,
 } from "obsidian";
 
 import type { AttachmenterSettings } from "../model/Settings";
@@ -73,7 +75,7 @@ export class PasteImageManagerModal extends Modal {
     this.updateUi();
 
     // Add ESC key support for canceling delete confirmation
-    this.scope.register([], "Escape", (evt) => {
+    this.scope.register([], "Escape", () => {
       if (this.isDeleting) {
         this.isDeleting = false;
         this.updateUi();
@@ -181,7 +183,7 @@ export class PasteImageManagerModal extends Modal {
       cls: "attachmenter-suggested-item",
     });
     suggestedItem.createEl("code", { text: suggestedFullPath });
-    
+
     // "Use" button just fills the input, it does not execute a move (Quick Move removed)
     const useSuggestedBtn = suggestedItem.createEl("button", {
       text: t("pasteImage.use"),

@@ -4,7 +4,7 @@ import { buildFolderRegExp } from "./HideFolderRibbon";
 import { t } from "../i18n/index";
 import { RenameImageModal } from "./RenameImageModal";
 import { AttachmentRenameHandler } from "../handler/AttachmentRenameHandler";
-import { PathResolver } from "../path/PathResolver";
+// import { PathResolver } from "../path/PathResolver";
 import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
 import { AttachmentDeleteModal } from "./AttachmentDeleteModal";
 
@@ -45,7 +45,6 @@ export class AttachmentManagerView extends ItemView {
 
   onOpen(): Promise<void> {
     this.render();
-    return Promise.resolve();
 
     // Listen for vault changes to refresh the view (with debounce)
     // Note: Manual calls to render() bypass this debounce via isRendering lock
@@ -79,6 +78,7 @@ export class AttachmentManagerView extends ItemView {
     this.registerEvent(
       this.plugin.app.workspace.on("layout-change", debouncedRender)
     );
+    return Promise.resolve();
   }
 
   async onClose() {
@@ -185,10 +185,10 @@ export class AttachmentManagerView extends ItemView {
     const currentSettings = this.plugin.settings;
     const filter = buildFolderRegExp(currentSettings);
     const items: AttachmentItem[] = [];
-    const pathResolver = new PathResolver(
-      this.plugin.app.vault,
-      currentSettings
-    );
+    // const pathResolver = new PathResolver(
+    //   this.plugin.app.vault,
+    //   currentSettings
+    // );
 
     // Debug log to verify settings are correct
     console.debug("AttachmentManagerView: Finding attachments with folder suffix:", currentSettings.defaultFolderSuffix);
@@ -198,7 +198,7 @@ export class AttachmentManagerView extends ItemView {
     const walkFolder = (folder: TFolder) => {
       if (filter.test(folder.name)) {
         // This is an attachment folder, find the note that owns it
-        const noteFile = this.findNoteForAttachmentFolder(folder, pathResolver);
+        const noteFile = this.findNoteForAttachmentFolder(folder);
 
         // Get all files in this folder
         folder.children?.forEach((child) => {
@@ -229,8 +229,7 @@ export class AttachmentManagerView extends ItemView {
   }
 
   private findNoteForAttachmentFolder(
-    attachmentFolder: TFolder,
-    pathResolver: PathResolver
+    attachmentFolder: TFolder
   ): TFile | null {
     // Try to find the note by matching folder name pattern
     // Use latest settings

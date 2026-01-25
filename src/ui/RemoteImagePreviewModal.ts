@@ -50,7 +50,7 @@ export class RemoteImagePreviewModal extends Modal {
         const urlRow = infoContainer.createDiv({ cls: "attachmenter-file-path" });
         urlRow.createEl("strong", { text: "URL: " });
         const urlSpan = urlRow.createEl("span", { text: this.imageUrl });
-        urlSpan.style.wordBreak = "break-all";
+        urlSpan.addClass("attachmenter-word-break-all");
 
         // Note file info if available
         if (this.noteFile) {

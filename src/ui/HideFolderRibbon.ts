@@ -46,7 +46,7 @@ export class HideFolderRibbon {
       this.ribbonIconButton = this.plugin.addRibbonIcon(
         this.plugin.settings.hideFolder ? "eye-off" : "eye",
         "Toggle attachment folder visibility",
-        (evt: MouseEvent) => {
+        () => {
           this.plugin.settings.hideFolder = !this.plugin.settings.hideFolder;
           void this.plugin.saveSettings();
           this.refresh(true); // Refresh folders when toggling hideFolder
@@ -289,7 +289,7 @@ export class HideFolderRibbon {
       this.ribbonIconButton = this.plugin.addRibbonIcon(
         this.plugin.settings.hideFolder ? "eye-off" : "eye",
         "Toggle attachment folder visibility",
-        (evt: MouseEvent) => {
+        () => {
           this.plugin.settings.hideFolder = !this.plugin.settings.hideFolder;
           void this.plugin.saveSettings();
           this.refresh(true); // Refresh folders when toggling hideFolder

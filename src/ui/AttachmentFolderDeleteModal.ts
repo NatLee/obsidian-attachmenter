@@ -3,8 +3,7 @@ import {
     Modal,
     TFolder,
     Vault,
-    Notice,
-    Setting
+    Notice
 } from "obsidian";
 import { t } from "../i18n/index";
 

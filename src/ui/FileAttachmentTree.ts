@@ -527,13 +527,13 @@ export class FileAttachmentTree {
     // Position the popover to the right of the file element
     const rect = fileEl.getBoundingClientRect();
     const fileExplorer = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
-    const explorerEl = fileExplorer?.view?.containerEl as HTMLElement;
+    const explorerEl = fileExplorer?.view?.containerEl;
 
     if (explorerEl) {
       const explorerRect = explorerEl.getBoundingClientRect();
 
       // Append to the file explorer container for proper positioning
-      popover.style.position = 'fixed';
+      popover.addClass('attachmenter-popover-fixed');
       popover.style.left = `${explorerRect.right + 5}px`;
       popover.style.top = `${rect.top}px`;
       // Dimensions and overflow handled by CSS
@@ -831,7 +831,7 @@ export class FileAttachmentTree {
   private readonly MAX_VISIBLE_ATTACHMENTS = 20;
 
   private renderAttachmentFolder(folder: TFolder, container: HTMLElement) {
-    const files = folder.children?.filter(child => child instanceof TFile) as TFile[] || [];
+    const files = folder.children?.filter(child => child instanceof TFile) || [];
     const totalCount = files.length;
 
     // Create folder header
@@ -866,7 +866,7 @@ export class FileAttachmentTree {
         async () => {
           // Delete all children first (recursive delete)
           // Or just delete folder? Vault.delete(folder, true) deletes recursive
-          await this.plugin.app.vault.delete(folder, true);
+          await this.plugin.app.fileManager.trashFile(folder);
           // Tree will refresh due to vault events
         }
       ).open();
@@ -892,8 +892,8 @@ export class FileAttachmentTree {
     // Feature: Open in system explorer
     const openFolderBtn = document.createElement('div');
     openFolderBtn.className = 'attachmenter-folder-action-btn';
-    openFolderBtn.style.marginRight = '8px'; // Add some spacing
-    openFolderBtn.style.cursor = 'pointer';
+    // openFolderBtn.style.marginRight = '8px'; // Moved to CSS
+    // openFolderBtn.style.cursor = 'pointer'; // Moved to CSS
     openFolderBtn.setAttribute('aria-label', t('attachmentManager.openInSystemExplorer'));
     setIcon(openFolderBtn, 'folder-open');
     openFolderBtn.onclick = (e) => {
@@ -1041,8 +1041,9 @@ export class FileAttachmentTree {
     setIcon(downloadAllBtn, 'download-cloud');
 
     // Style adjustments for header button
-    downloadAllBtn.style.marginLeft = "auto";
-    downloadAllBtn.style.marginRight = "4px";
+    downloadAllBtn.addClass('attachmenter-download-btn');
+    // downloadAllBtn.style.marginLeft = "auto"; // Moved to CSS
+    // downloadAllBtn.style.marginRight = "4px"; // Moved to CSS
 
     downloadAllBtn.onclick = async (e) => {
       e.stopPropagation();
@@ -1053,7 +1054,7 @@ export class FileAttachmentTree {
       setIcon(downloadAllBtn, 'loader');
 
       let successCount = 0;
-      let failCount = 0;
+      // let failCount = 0; // Unused
 
       try {
         new Notice(t("pathCheck.checking")); // Checking/Downloading message
@@ -1062,10 +1063,10 @@ export class FileAttachmentTree {
           try {
             const success = await this.plugin.remoteImageService.downloadRemoteImage(noteFile, img.link, img.alt);
             if (success) successCount++;
-            else failCount++;
+            // else failCount++; // Unused
           } catch (err) {
             console.error(`Failed to download ${img.link}`, err);
-            failCount++;
+            // failCount++; // Unused
           }
         }
 

@@ -72,7 +72,8 @@ export class PasteImageHandler {
     }
 
     // 生成新的文件名
-    const time = moment();
+    // @ts-ignore
+    const time = (window.moment && window.moment()) || moment();
     const baseName = this.nameResolver.buildBaseName(activeFile, time);
     const newPath = normalizePath(
       join(folderPath, `${baseName}.${file.extension}`)
@@ -139,7 +140,8 @@ export class PasteImageHandler {
     file: TFile,
     newPath: string,
     activeView: TextFileView,
-    activeFile: TFile
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _activeFile: TFile
   ): Promise<{ file: TFile; filePath: string } | null> {
     try {
       const oldPath = file.path;
@@ -213,22 +215,22 @@ export class PasteImageHandler {
   ) {
     try {
       const oldPath = file.path;
-      
+
       // Sanitize the new path to ensure it's valid
       const pathParts = newPath.split("/");
       const fileName = pathParts[pathParts.length - 1];
       const fileNameParts = fileName.split(".");
       const fileExtension = fileNameParts.length > 1 ? fileNameParts.pop() : "";
       const fileBaseName = fileNameParts.join(".");
-      
+
       // Sanitize the base name and reconstruct the path
       const sanitizedBaseName = PathSanitizer.sanitizeFileName(fileBaseName);
-      const sanitizedFileName = fileExtension 
+      const sanitizedFileName = fileExtension
         ? `${sanitizedBaseName}.${fileExtension}`
         : sanitizedBaseName;
       pathParts[pathParts.length - 1] = sanitizedFileName;
       const sanitizedNewPath = normalizePath(pathParts.join("/"));
-      
+
       // Ensure parent directory exists
       const newPathDir = sanitizedNewPath.substring(0, sanitizedNewPath.lastIndexOf("/"));
       if (!(await this.vault.adapter.exists(newPathDir))) {
@@ -293,7 +295,7 @@ export class PasteImageHandler {
     try {
       // Remove the link from the document first
       let content = activeView.getViewData();
-      
+
       if (activeFile.extension === "md") {
         // For markdown, remove the image link
         // Handle both single-line and multi-line cases
@@ -310,7 +312,7 @@ export class PasteImageHandler {
           content = JSON.stringify(data, null, "\t");
         }
       }
-      
+
       activeView.setViewData(content, false);
 
       // Delete the file

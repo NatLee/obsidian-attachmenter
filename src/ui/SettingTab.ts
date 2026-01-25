@@ -34,7 +34,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     // =========================================================================
     // 1. General Settings (一般設定)
     // =========================================================================
-    containerEl.createEl("h3", { text: t("settings.group.general") });
+    new Setting(containerEl).setName("").setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.language.name"))
@@ -70,7 +70,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     // =========================================================================
     // 2. Attachment Configuration (附件配置)
     // =========================================================================
-    containerEl.createEl("h3", { text: t("settings.group.attachment") });
+    new Setting(containerEl).setName("").setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.folderSuffix.name"))
@@ -130,7 +130,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     // =========================================================================
     // 3. Appearance & Behavior (外觀與行為)
     // =========================================================================
-    containerEl.createEl("h3", { text: t("settings.group.appearance") });
+    new Setting(containerEl).setName("").setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.hideFolder.name"))
@@ -254,7 +254,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     // =========================================================================
     // 4. Highlighting (高亮設定)
     // =========================================================================
-    containerEl.createEl("h3", { text: t("settings.highlight.name") });
+    new Setting(containerEl).setName("").setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.highlight.enable"))
@@ -286,7 +286,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     // =========================================================================
     // 5. Tools & Maintenance (工具與維護)
     // =========================================================================
-    containerEl.createEl("h3", { text: t("settings.group.tools") });
+    new Setting(containerEl).setName("").setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.checkPaths.name"))
@@ -330,7 +330,9 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     defaultValue: string,
     onSave: (value: string) => Promise<void>
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let textComponent: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let pickerComponent: any;
 
     const setting = new Setting(containerEl)
@@ -374,9 +376,10 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     });
 
     const alphaLabel = sliderContainer.createDiv({ text: '100%' });
-    alphaLabel.style.fontSize = '0.8 em';
-    alphaLabel.style.minWidth = '35px';
-    alphaLabel.style.textAlign = 'right';
+    alphaLabel.addClass('attachmenter-alpha-label');
+    // alphaLabel.style.fontSize = '0.8 em';
+    // alphaLabel.style.minWidth = '35px';
+    // alphaLabel.style.textAlign = 'right';
 
     // We need to define updateSliderFromColor before creating the slider so we can use it, 
     // but the slider needs to be created first.
@@ -395,7 +398,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       } else {
         // If we can't parse (e.g. var()), disable slider
         slider.setValue(100);
-        alphaLabel.setText('N/A');
+        // Set text to "N/a" and disable slider
+        alphaLabel.setText('N/a');
         slider.setDisabled(true);
       }
     };
@@ -413,7 +417,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
 
           if (newColor && newColor !== currentColor) {
             textComponent.setValue(newColor);
-            textComponent.inputEl.style.borderColor = "";
+            textComponent.inputEl.removeClass("attachmenter-input-error");
             previewEl.style.backgroundColor = getPreviewColor(newColor);
             await onSave(newColor);
           }
@@ -424,12 +428,12 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       .addText((text) => {
         textComponent = text;
         text
-          .setPlaceholder("Default (Theme Accent)")
+          .setPlaceholder("Default (theme accent)")
           .setValue(initialValue)
           .onChange(async (value) => {
             // Validate CSS color
             const isValid = value === "" || CSS.supports("color", value);
-            text.inputEl.style.borderColor = isValid ? "" : "red";
+            text.inputEl.toggleClass("attachmenter-input-error", !isValid);
 
             if (isValid) {
               previewEl.style.backgroundColor = getPreviewColor(value);
@@ -453,7 +457,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             // Update text field
             textComponent.setValue(value);
-            textComponent.inputEl.style.borderColor = ""; // clear error
+            textComponent.inputEl.removeClass("attachmenter-input-error"); // clear error
             previewEl.style.backgroundColor = value;
             updateSliderFromColor(value); // Sync slider
             await onSave(value);
@@ -466,7 +470,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           .onClick(async () => {
             // Restore to default
             textComponent.setValue(defaultValue);
-            textComponent.inputEl.style.borderColor = "";
+            textComponent.inputEl.removeClass("attachmenter-input-error");
             previewEl.style.backgroundColor = getPreviewColor(defaultValue);
             updateSliderFromColor(defaultValue);
 
@@ -505,7 +509,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
         visibility: 'visible'
       });
 
-      previewEl.style.position = 'relative';
+      previewEl.addClass('attachmenter-color-preview-wrapper');
+      // previewEl.style.position = 'relative';
     }
 
     if (setting.controlEl.firstChild !== previewContainer) {

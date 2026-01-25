@@ -18,7 +18,7 @@ export class CleanupHandler {
                     try {
                         // double check it is still empty
                         if (folder.children.length === 0) {
-                            await this.app.vault.delete(folder);
+                            await this.app.fileManager.trashFile(folder);
                             deletedCount++;
                         }
                     } catch (err) {

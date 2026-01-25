@@ -24,7 +24,6 @@ export class AttachmentFolderManagerView extends ItemView {
 
   onOpen(): Promise<void> {
     this.render();
-    return Promise.resolve();
 
     // Listen for vault changes to refresh the view
     this.registerEvent(
@@ -42,6 +41,7 @@ export class AttachmentFolderManagerView extends ItemView {
         void this.render();
       })
     );
+    return Promise.resolve();
   }
 
   async onClose() {
