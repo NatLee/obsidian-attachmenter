@@ -39,27 +39,35 @@ export class RenameImageModal extends Modal {
           .onChange((value) => {
             this.newName = value || this.defaultName;
           });
+
+        text.inputEl.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            this.confirm();
+          }
+        });
+
         // Focus and select all text
         text.inputEl.focus();
         text.inputEl.select();
       });
 
-    new Setting(contentEl).addButton((button) => {
-      button
-        .setButtonText(t("common.cancel"))
-        .onClick(() => {
-          this.cancel();
-        });
-    });
-
-    new Setting(contentEl).addButton((button) => {
-      button
-        .setButtonText(t("common.confirm"))
-        .setCta()
-        .onClick(async () => {
-          await this.confirm();
-        });
-    });
+    new Setting(contentEl)
+      .addButton((button) => {
+        button
+          .setButtonText(t("common.cancel"))
+          .onClick(() => {
+            this.cancel();
+          });
+      })
+      .addButton((button) => {
+        button
+          .setButtonText(t("common.confirm"))
+          .setCta()
+          .onClick(async () => {
+            await this.confirm();
+          });
+      });
 
     // Show action buttons outside modal
     this.showActionButtons();
