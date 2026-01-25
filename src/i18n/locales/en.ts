@@ -18,11 +18,11 @@ export const en: TranslationMap = {
   settings: {
     title: "Attachmenter settings",
     group: {
-      general: "General Settings",
-      management: "Management Rules",
-      appearance: "Interface Integration",
-      view: "Attachment Tree View",
-      tools: "Tools & Maintenance"
+      general: "General settings",
+      management: "Management rules",
+      appearance: "Interface integration",
+      view: "Attachment tree view",
+      tools: "Tools & maintenance"
     },
     language: {
       name: "Language",
@@ -52,7 +52,7 @@ export const en: TranslationMap = {
       name: "Highlight expanded file",
       enable: "Enable highlight",
       enableDesc: "Add a left border accent to the note's file title when its attachment tree is expanded.",
-      borderColor: "Border Color",
+      borderColor: "Border color",
       borderColorDesc: "CSS color value for the left border accent. Defaults to your theme's accent color.",
     },
     hideFolder: {

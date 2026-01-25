@@ -147,7 +147,7 @@ export class FileAttachmentTree {
       // This prevents scroll position from being reset
       if (newNavFiles.length > 0) {
         for (const navFile of newNavFiles) {
-          this.processFileElement(navFile);
+          void this.processFileElement(navFile);
         }
       }
     });
@@ -203,7 +203,7 @@ export class FileAttachmentTree {
         fileElements.forEach((fileEl) => {
           // Only process if element is visible
           if ((fileEl as HTMLElement).offsetParent !== null) {
-            this.processFileElement(fileEl as HTMLElement);
+            void this.processFileElement(fileEl as HTMLElement);
           }
         });
 
@@ -416,7 +416,7 @@ export class FileAttachmentTree {
 
     // If already expanded, show the popover
     if (isExpanded) {
-      this.showAttachmentPopover(file, fileEl, expandButton);
+      void this.showAttachmentPopover(file, fileEl, expandButton);
     }
   }
 
@@ -446,7 +446,7 @@ export class FileAttachmentTree {
 
       // Expand - show popover
       this.expandedFiles.add(file.path);
-      this.showAttachmentPopover(file, fileEl, buttonEl);
+      void this.showAttachmentPopover(file, fileEl, buttonEl);
 
       // Add highlight if enabled
       if (this.plugin.settings.enableHighlight && fileTitle) {
@@ -501,7 +501,7 @@ export class FileAttachmentTree {
     }
   }
 
-  private showAttachmentPopover(file: TFile, fileEl: HTMLElement, buttonEl: HTMLElement) {
+  private async showAttachmentPopover(file: TFile, fileEl: HTMLElement, buttonEl: HTMLElement) {
     // Remove existing popover for this file if any
     const existingContainer = this.fileAttachmentContainers.get(file.path);
     if (existingContainer) {
@@ -520,7 +520,7 @@ export class FileAttachmentTree {
       // No attachment folder - but still try to render remote images if the feature is enabled
       if (this.plugin.settings.showRemoteHint) {
         // We need to get the note file and render remote images directly
-        this.renderRemoteImagesOnly(file, popover);
+        await this.renderRemoteImagesOnly(file, popover);
       } else {
         const emptyMsg = document.createElement('div');
         emptyMsg.className = 'attachmenter-no-attachments';
@@ -997,7 +997,7 @@ export class FileAttachmentTree {
     // Feature 1: Render remote images
     const noteFile = this.getNoteFileForFolder(folder);
     if (noteFile) {
-      this.renderRemoteImages(noteFile, container);
+      void this.renderRemoteImages(noteFile, container);
     }
   }
 

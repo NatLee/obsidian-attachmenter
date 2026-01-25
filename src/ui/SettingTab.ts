@@ -4,6 +4,8 @@ import {
   PluginSettingTab,
   Setting,
   SliderComponent,
+  TextComponent,
+  ColorComponent,
 } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { PathCheckModal } from "./PathCheckModal";
@@ -330,10 +332,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     defaultValue: string,
     onSave: (value: string) => Promise<void>
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let textComponent: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let pickerComponent: any;
+    let textComponent: TextComponent;
+    let pickerComponent: ColorComponent;
 
     const setting = new Setting(containerEl)
       .setName(name)

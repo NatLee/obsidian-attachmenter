@@ -11,7 +11,6 @@ export class AttachmentRenameHandler {
   async renameAttachment(
     attachmentFile: TFile,
     newBaseName: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _noteFile: TFile | null
   ): Promise<void> {
     // Sanitize the new name

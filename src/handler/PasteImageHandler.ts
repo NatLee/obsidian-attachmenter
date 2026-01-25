@@ -140,7 +140,6 @@ export class PasteImageHandler {
     file: TFile,
     newPath: string,
     activeView: TextFileView,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _activeFile: TFile
   ): Promise<{ file: TFile; filePath: string } | null> {
     try {

@@ -6,7 +6,7 @@ import { t } from "../i18n/index";
 export class CleanupHandler {
     constructor(private app: App, private plugin: AttachmenterPlugin) { }
 
-    public async checkEmptyFolders() {
+    public checkEmptyFolders() {
         const folders = this.getEmptyAttachmentFolders();
 
         new CleanupResultModal(
