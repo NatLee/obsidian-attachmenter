@@ -43,8 +43,9 @@ export class AttachmentManagerView extends ItemView {
     return "folder";
   }
 
-  async onOpen() {
-    void this.render();
+  onOpen(): Promise<void> {
+    this.render();
+    return Promise.resolve();
 
     // Listen for vault changes to refresh the view (with debounce)
     // Note: Manual calls to render() bypass this debounce via isRendering lock

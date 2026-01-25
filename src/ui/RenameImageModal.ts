@@ -43,7 +43,7 @@ export class RenameImageModal extends Modal {
         text.inputEl.addEventListener("keypress", (e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            this.confirm();
+            void this.confirm();
           }
         });
 

@@ -301,12 +301,12 @@ export class FileAttachmentTree {
   }
 
   private addExpandButtonToFile(fileEl: HTMLElement, file: TFile) {
-    const fileTitle = fileEl.querySelector('.nav-file-title') as HTMLElement;
+    const fileTitle = fileEl.querySelector<HTMLElement>('.nav-file-title');
     if (!fileTitle) return;
 
     // Set file title to relative positioning to allow absolute positioning of the button
-    fileTitle.style.position = 'relative';
-    fileTitle.style.paddingRight = '32px'; // Make room for the larger expand button
+    fileTitle.addClass('attachmenter-nav-file-title-expanded');
+    // Inline styles removed in favor of CSS
 
     // Create expand button - styled via CSS
     const expandButton = document.createElement('div');

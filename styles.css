@@ -1075,3 +1075,20 @@
   -webkit-user-select: text;
   cursor: text;
 }
+
+/* File Title positioning for Expand Button */
+.attachmenter-nav-file-title-expanded {
+  position: relative;
+  padding-right: 32px !important;
+  /* Ensure space for button overriding potential theme padding */
+}
+
+/* Manager Button Text */
+.attachmenter-manager-button-text {
+  font-size: 0.9em;
+}
+
+/* Utility to hide elements cleanly */
+.attachmenter-hidden {
+  display: none !important;
+}

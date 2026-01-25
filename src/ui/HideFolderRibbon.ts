@@ -212,7 +212,7 @@ export class HideFolderRibbon {
     // Text
     const text = document.createElement('span');
     text.textContent = t("attachmentManager.title");
-    text.style.fontSize = '0.9em';
+    text.className = 'attachmenter-manager-button-text';
 
     // Count
     const count = document.createElement('span');
@@ -298,7 +298,7 @@ export class HideFolderRibbon {
     } else if (!this.plugin.settings.showRibbonIcon && this.ribbonIconButton) {
       // Remove ribbon icon if it should be hidden
       try {
-        (this.ribbonIconButton as HTMLElement).remove();
+        this.ribbonIconButton.remove();
       } catch (error) {
         console.error("Error removing ribbon icon:", error);
       }
@@ -396,16 +396,16 @@ export class HideFolderRibbon {
               hasChanges = true;
               if (shouldHide) {
                 folderElement.addClass("attachmenter-hidden-folder");
-                // Force clear any inline styles that might interfere
-                folderElement.style.display = '';
-                folderElement.style.visibility = '';
-                folderElement.style.height = '';
+                // Remove properties to restore CSS control
+                folderElement.style.removeProperty('display');
+                folderElement.style.removeProperty('visibility');
+                folderElement.style.removeProperty('height');
               } else {
                 folderElement.removeClass("attachmenter-hidden-folder");
-                // Clear inline styles when showing
-                folderElement.style.display = '';
-                folderElement.style.visibility = '';
-                folderElement.style.height = '';
+                // Remove properties to restore CSS control
+                folderElement.style.removeProperty('display');
+                folderElement.style.removeProperty('visibility');
+                folderElement.style.removeProperty('height');
               }
               // Force immediate reflow
               void folderElement.offsetHeight;
@@ -424,9 +424,9 @@ export class HideFolderRibbon {
             if (folderElement.hasClass("attachmenter-hidden-folder")) {
               hasChanges = true;
               folderElement.removeClass("attachmenter-hidden-folder");
-              folderElement.style.display = '';
-              folderElement.style.visibility = '';
-              folderElement.style.height = '';
+              folderElement.style.removeProperty('display');
+              folderElement.style.removeProperty('visibility');
+              folderElement.style.removeProperty('height');
               void folderElement.offsetHeight;
             }
             if (folderElement.hasClass("attachmenter-aero-folder")) {
