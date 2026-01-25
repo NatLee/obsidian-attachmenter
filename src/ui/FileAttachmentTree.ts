@@ -90,7 +90,9 @@ export class FileAttachmentTree {
       // Skip if processing or rendering tree
       if (this.isProcessing || this.isRenderingTree) return;
 
-      let shouldProcess = false;
+      // Collect new nav-file elements that need processing
+      const newNavFiles: HTMLElement[] = [];
+
       for (const mutation of mutations) {
         for (const node of Array.from(mutation.addedNodes)) {
           if (!(node instanceof HTMLElement)) continue;
@@ -114,19 +116,20 @@ export class FileAttachmentTree {
             : Array.from(node.querySelectorAll('.nav-file'));
 
           for (const navFile of navFiles) {
-            // Only process if this nav-file doesn't have our button yet
+            // Only collect if this nav-file doesn't have our button yet
             if (!navFile.querySelector('.attachmenter-expand-button')) {
-              shouldProcess = true;
-              break;
+              newNavFiles.push(navFile as HTMLElement);
             }
           }
-          if (shouldProcess) break;
         }
-        if (shouldProcess) break;
       }
 
-      if (shouldProcess) {
-        this.debouncedRefresh();
+      // Process new elements directly without triggering full refresh
+      // This prevents scroll position from being reset
+      if (newNavFiles.length > 0) {
+        for (const navFile of newNavFiles) {
+          this.processFileElement(navFile);
+        }
       }
     });
 
@@ -368,7 +371,7 @@ export class FileAttachmentTree {
     const pathsToUpdate = Array.from(this.fileAttachmentContainers.keys());
 
     // Close all existing popovers
-    for (const [path, container] of this.fileAttachmentContainers) {
+    for (const [, container] of this.fileAttachmentContainers) {
       container.remove();
     }
     this.fileAttachmentContainers.clear();
@@ -712,7 +715,7 @@ export class FileAttachmentTree {
 
     fileEl.onclick = (e) => {
       e.stopPropagation();
-      this.plugin.app.workspace.openLinkText(file.path, '', true);
+      void this.plugin.app.workspace.openLinkText(file.path, '', true);
     };
 
     // File icon - don't shrink
@@ -756,9 +759,9 @@ export class FileAttachmentTree {
     renameButton.className = 'attachmenter-action-button';
     renameButton.title = t("attachmentManager.rename");
     setIcon(renameButton, 'pencil');
-    renameButton.onclick = async (e) => {
+    renameButton.onclick = (e) => {
       e.stopPropagation();
-      await this.showRenameDialog(file, noteFile);
+      this.showRenameDialog(file, noteFile);
     };
 
     // Delete button
@@ -808,7 +811,7 @@ export class FileAttachmentTree {
     modal.open();
   }
 
-  private async showRenameDialog(file: TFile, noteFile: TFile | null) {
+  private showRenameDialog(file: TFile, noteFile: TFile | null) {
     // Prevent multiple modals from opening
     if (this.isModalOpen) return;
     this.isModalOpen = true;
@@ -865,7 +868,7 @@ export class FileAttachmentTree {
       file,
       async () => {
         // Delete the file
-        await this.plugin.app.vault.trash(file, true);
+        await this.plugin.app.fileManager.trashFile(file);
 
         // Refresh the attachment tree for the parent note
         if (noteFile) {

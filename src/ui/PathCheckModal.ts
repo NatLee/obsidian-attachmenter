@@ -320,7 +320,7 @@ export class PathCheckModal extends Modal {
 
     const cardHeader = card.createDiv({ cls: "attachmenter-stat-card-header" });
     cardHeader.createEl("h4", { text: title, cls: "attachmenter-stat-card-title" });
-    const mainValueEl = cardHeader.createDiv({
+    cardHeader.createDiv({
       cls: "attachmenter-stat-value",
       text: mainValue,
     });

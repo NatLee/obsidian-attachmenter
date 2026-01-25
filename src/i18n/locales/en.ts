@@ -151,14 +151,14 @@ export const en: TranslationMap = {
         withoutAttachments: "Without attachments"
       },
       imageLinks: {
-        title: "Image Links",
+        title: "Image links",
         resolved: "Resolved",
         unresolved: "Unresolved",
         markdown: "Markdown",
         wiki: "Wiki"
       },
       attachmentFolders: {
-        title: "Attachment Folders",
+        title: "Attachment folders",
         existing: "Existing",
         missing: "Missing",
         correctlyNamed: "Correctly named",
@@ -202,7 +202,7 @@ export const en: TranslationMap = {
 
   // 附件资料夹管理视图
   attachmentFolderManager: {
-    title: "Attachment Folders",
+    title: "Attachment folders",
     refresh: "Refresh",
     empty: "No attachment folders found",
     fileCount: "{count} file"
@@ -217,13 +217,13 @@ export const en: TranslationMap = {
 
   // 附件管理器
   attachmentManager: {
-    title: "Attachment Manager",
+    title: "Attachment manager",
     refresh: "Refresh",
     empty: "No attachments found",
     preview: "Preview",
     rename: "Rename",
     delete: "Delete",
-    openNote: "Open Note",
+    openNote: "Open note",
     previewNotAvailable: "Preview not available for this file type",
     deleteConfirm: "Delete attachment",
     deleteConfirmDesc: "Are you sure you want to delete \"{filename}\"? This action cannot be undone.",

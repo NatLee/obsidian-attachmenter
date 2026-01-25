@@ -6,7 +6,7 @@ export class AttachmentRenameHandler {
     private vault: Vault,
     private fileManager: FileManager,
     private metadataCache: MetadataCache
-  ) {}
+  ) { }
 
   async renameAttachment(
     attachmentFile: TFile,
@@ -17,7 +17,7 @@ export class AttachmentRenameHandler {
     const sanitizedName = PathSanitizer.sanitizeFileName(newBaseName);
     const extension = attachmentFile.extension;
     const newFileName = `${sanitizedName}.${extension}`;
-    
+
     // Get the directory of the attachment
     const dir = attachmentFile.parent?.path || "";
     const newPath = normalizePath(dir ? `${dir}/${newFileName}` : newFileName);
@@ -57,34 +57,34 @@ export class AttachmentRenameHandler {
       const content = await this.vault.read(file);
       let newContent = content;
       let hasMatch = false;
-      
+
       // For markdown files
       if (file.extension === "md") {
         // Get the new link text for this file
         const newLink = this.fileManager.generateMarkdownLink(newFile, file.path);
-        
+
         // Try to find and replace markdown image links
         const markdownRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
         let match;
         const replacements: Array<{ old: string; new: string }> = [];
-        
+
         // Collect all matches
         while ((match = markdownRegex.exec(content)) !== null) {
           const linkPath = match[2].trim();
           const resolvedPath = this.resolveLinkPath(linkPath, file.path);
-          
+
           if (resolvedPath === oldFilePath) {
             const altText = match[1] || "";
             // Extract path from newLink (format: ![name](path))
             const pathMatch = newLink.match(/\]\(([^)]+)\)/);
             const newPath = pathMatch ? pathMatch[1] : newFile.path;
-            replacements.push({ 
-              old: match[0], 
-              new: `![${altText}](${newPath})` 
+            replacements.push({
+              old: match[0],
+              new: `![${altText}](${newPath})`
             });
           }
         }
-        
+
         // Apply replacements (in reverse order to preserve indices)
         for (let i = replacements.length - 1; i >= 0; i--) {
           const { old, new: newLinkText } = replacements[i];
@@ -93,15 +93,15 @@ export class AttachmentRenameHandler {
             newContent = newContent.replace(old, newLinkText);
           }
         }
-        
+
         // Also handle wiki links: [[path]]
         const wikiRegex = /\[\[([^\]]+)\]\]/g;
         const wikiReplacements: Array<{ old: string; new: string }> = [];
-        
+
         while ((match = wikiRegex.exec(content)) !== null) {
           const linkPath = match[1].trim();
           const resolvedPath = this.resolveLinkPath(linkPath, file.path);
-          
+
           if (resolvedPath === oldFilePath) {
             // Generate new wiki link path
             const pathMatch = newLink.match(/\]\(([^)]+)\)/);
@@ -109,7 +109,7 @@ export class AttachmentRenameHandler {
             wikiReplacements.push({ old: match[0], new: `[[${newPath}]]` });
           }
         }
-        
+
         // Apply wiki link replacements
         for (let i = wikiReplacements.length - 1; i >= 0; i--) {
           const { old, new: newLinkText } = wikiReplacements[i];
@@ -124,7 +124,7 @@ export class AttachmentRenameHandler {
           const canvasData = JSON.parse(content);
           if (canvasData.nodes) {
             let canvasModified = false;
-            canvasData.nodes.forEach((node: any) => {
+            canvasData.nodes.forEach((node: { type: string; file?: string }) => {
               if (node.type === "file" && node.file === oldFilePath) {
                 node.file = newFile.path;
                 canvasModified = true;
@@ -154,7 +154,7 @@ export class AttachmentRenameHandler {
   private resolveLinkPath(linkPath: string, fromFile: string): string {
     // Remove query strings and anchors
     const cleanPath = linkPath.split('?')[0].split('#')[0];
-    
+
     // If it's already an absolute path, return it
     if (this.vault.getAbstractFileByPath(cleanPath)) {
       return cleanPath;
@@ -163,7 +163,7 @@ export class AttachmentRenameHandler {
     // Resolve relative path
     const fromDir = fromFile.substring(0, fromFile.lastIndexOf('/')) || '';
     const resolved = normalizePath(fromDir ? `${fromDir}/${cleanPath}` : cleanPath);
-    
+
     // Try to get the file
     const file = this.vault.getAbstractFileByPath(resolved);
     if (file instanceof TFile) {

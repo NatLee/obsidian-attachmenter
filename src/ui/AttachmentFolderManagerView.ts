@@ -24,21 +24,21 @@ export class AttachmentFolderManagerView extends ItemView {
 
   async onOpen() {
     await this.render();
-    
+
     // Listen for vault changes to refresh the view
     this.registerEvent(
       this.plugin.app.vault.on("create", () => {
-        this.render();
+        void this.render();
       })
     );
     this.registerEvent(
       this.plugin.app.vault.on("delete", () => {
-        this.render();
+        void this.render();
       })
     );
     this.registerEvent(
       this.plugin.app.vault.on("rename", () => {
-        this.render();
+        void this.render();
       })
     );
   }
@@ -47,26 +47,26 @@ export class AttachmentFolderManagerView extends ItemView {
     // Cleanup if needed
   }
 
-  async render() {
+  render() {
     const container = this.contentEl;
     container.empty();
     container.addClass("attachment-folder-manager-view");
 
     // Add header with refresh button (compact for sidebar)
     const header = container.createDiv({ cls: "attachment-folder-manager-header" });
-    const refreshButton = header.createEl("button", { 
+    const refreshButton = header.createEl("button", {
       text: t("attachmentFolderManager.refresh"),
       cls: "mod-cta"
     });
     refreshButton.onclick = () => {
-      this.render();
+      void this.render();
     };
 
     // Find all attachment folders
     const folders = this.findAttachmentFolders();
-    
+
     if (folders.length === 0) {
-      container.createDiv({ 
+      container.createDiv({
         text: t("attachmentFolderManager.empty"),
         cls: "attachment-folder-empty"
       });
@@ -77,22 +77,22 @@ export class AttachmentFolderManagerView extends ItemView {
     const folderList = container.createDiv({ cls: "attachment-folder-list" });
     folders.forEach((folder) => {
       const folderEl = folderList.createDiv({ cls: "attachment-folder-item" });
-      folderEl.createDiv({ 
+      folderEl.createDiv({
         text: folder.path,
         cls: "folder-path"
       });
-      
+
       const fileCount = folder.children?.filter(f => f instanceof TFile).length || 0;
-      const fileCountText = fileCount === 1 
+      const fileCountText = fileCount === 1
         ? t("attachmentFolderManager.fileCount", { count: fileCount })
         : t("attachmentFolderManager.fileCount", { count: fileCount }) + "s";
-      folderEl.createDiv({ 
+      folderEl.createDiv({
         text: fileCountText,
         cls: "folder-count"
       });
 
       folderEl.onclick = () => {
-        this.plugin.app.workspace.openLinkText(folder.path, "", true);
+        void this.plugin.app.workspace.openLinkText(folder.path, "", true);
       };
     });
   }
@@ -100,7 +100,7 @@ export class AttachmentFolderManagerView extends ItemView {
   private findAttachmentFolders(): TFolder[] {
     const filter = buildFolderRegExp(this.plugin.settings);
     const folders: TFolder[] = [];
-    
+
     const walkFolder = (folder: TFolder) => {
       if (filter.test(folder.name)) {
         folders.push(folder);

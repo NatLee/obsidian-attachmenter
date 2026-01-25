@@ -1,4 +1,4 @@
-import { setIcon, TFolder } from "obsidian";
+import { setIcon, TFolder, ItemView } from "obsidian";
 
 import type AttachmenterPlugin from "../../main";
 import type { AttachmenterSettings } from "../model/Settings";
@@ -123,7 +123,7 @@ export class HideFolderRibbon {
           if (shouldRefresh && !this.isRefreshing) {
             this.refreshFolders();
           }
-        }, 100); // Increased delay to reduce excessive updates
+        }, 50); // Reduced delay for faster response
       });
       this.mutationObserver.observe(window.document, {
         childList: true,
@@ -178,7 +178,7 @@ export class HideFolderRibbon {
     const fileExplorer = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
     if (!fileExplorer?.view) return;
 
-    const view = fileExplorer.view as any;
+    const view = fileExplorer.view as ItemView & { containerEl: HTMLElement };
     const container = view.containerEl;
     if (!container) return;
 
@@ -236,7 +236,7 @@ export class HideFolderRibbon {
 
     // Add click handler to open manager view
     button.onclick = () => {
-      this.openAttachmentManager();
+      void this.openAttachmentManager();
     };
 
     section.appendChild(button);
@@ -256,7 +256,7 @@ export class HideFolderRibbon {
 
     if (leaves.length > 0) {
       // Focus existing view
-      this.plugin.app.workspace.revealLeaf(leaves[0]);
+      void this.plugin.app.workspace.revealLeaf(leaves[0]);
     } else {
       // Create new leaf in main area (not sidebar)
       const leaf = this.plugin.app.workspace.getLeaf('tab');
@@ -264,7 +264,7 @@ export class HideFolderRibbon {
         await leaf.setViewState({
           type: ATTACHMENT_MANAGER_VIEW_TYPE,
         });
-        this.plugin.app.workspace.revealLeaf(leaf);
+        void this.plugin.app.workspace.revealLeaf(leaf);
       }
     }
   }
@@ -471,7 +471,11 @@ export class HideFolderRibbon {
       return;
     }
 
-    const view = fileExplorer.view as any;
+    const view = fileExplorer.view as ItemView & { containerEl: HTMLElement; requestUpdate?: () => void; recomputeChildren?: () => void; sort?: () => void; fileItems?: Record<string, unknown>; tree?: { infinityScroll?: { invalidateAll?: () => void; compute?: () => void } } };
+
+    // Save scroll position before refresh
+    const navFilesContainer = view.containerEl?.querySelector('.nav-files-container') as HTMLElement;
+    const savedScrollTop = navFilesContainer?.scrollTop ?? 0;
 
     // Try multiple Obsidian internal methods to force refresh
     try {
@@ -506,10 +510,21 @@ export class HideFolderRibbon {
       console.debug("Could not call Obsidian internal methods:", e);
     }
 
+    // Restore scroll position after refresh
+    if (navFilesContainer && savedScrollTop > 0) {
+      requestAnimationFrame(() => {
+        navFilesContainer.scrollTop = savedScrollTop;
+      });
+    }
+
     // Trigger resize event on workspace to force layout recalculation
     requestAnimationFrame(() => {
       try {
         this.plugin.app.workspace.trigger('resize');
+        // Restore scroll position again after resize
+        if (navFilesContainer && savedScrollTop > 0) {
+          navFilesContainer.scrollTop = savedScrollTop;
+        }
       } catch (e) {
         console.debug("Could not trigger resize:", e);
       }

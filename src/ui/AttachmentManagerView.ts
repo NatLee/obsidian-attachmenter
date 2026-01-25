@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, TFolder, setIcon, Notice } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, TFolder, setIcon } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { buildFolderRegExp } from "./HideFolderRibbon";
 import { t } from "../i18n/index";
@@ -59,7 +59,7 @@ export class AttachmentManagerView extends ItemView {
       }
       renderTimeout = window.setTimeout(() => {
         if (!this.isRendering) {
-          this.render();
+          void this.render();
         }
       }, 300);
     };
@@ -84,10 +84,10 @@ export class AttachmentManagerView extends ItemView {
     // Cleanup if needed
   }
 
-  async render() {
+  render() {
     // Prevent concurrent rendering
     if (this.isRendering) {
-      console.log("AttachmentManagerView: Render already in progress, skipping...");
+      console.debug("AttachmentManagerView: Render already in progress, skipping...");
       return;
     }
 
@@ -110,13 +110,13 @@ export class AttachmentManagerView extends ItemView {
 
       // Header
       const header = container.createDiv({ cls: "attachmenter-manager-header" });
-      const title = header.createEl("h2", { text: t("attachmentManager.title") });
+      header.createEl("h2", { text: t("attachmentManager.title") });
       const refreshButton = header.createEl("button", {
         text: t("attachmentManager.refresh"),
         cls: "mod-cta"
       });
       refreshButton.onclick = () => {
-        this.render();
+        void this.render();
       };
 
       // Show count in header
@@ -124,9 +124,7 @@ export class AttachmentManagerView extends ItemView {
         text: ` (${this.attachmentItems.length})`,
         cls: "attachmenter-manager-count"
       });
-      countSpan.style.marginLeft = "0.5em";
-      countSpan.style.color = "var(--text-muted)";
-      countSpan.style.fontSize = "0.9em";
+      countSpan.addClass("attachmenter-manager-count");
 
       if (this.attachmentItems.length === 0) {
         container.createDiv({
@@ -154,9 +152,9 @@ export class AttachmentManagerView extends ItemView {
             text: t("attachmentManager.openNote"),
             cls: "mod-cta"
           });
-          noteButton.style.marginLeft = "1em";
+          noteButton.addClass("attachmenter-folder-note-btn");
           noteButton.onclick = () => {
-            this.plugin.app.workspace.openLinkText(noteLink.path, "", true);
+            void this.plugin.app.workspace.openLinkText(noteLink.path, "", true);
           };
         }
 
@@ -192,7 +190,7 @@ export class AttachmentManagerView extends ItemView {
     );
 
     // Debug log to verify settings are correct
-    console.log("AttachmentManagerView: Finding attachments with folder suffix:", currentSettings.defaultFolderSuffix);
+    console.debug("AttachmentManagerView: Finding attachments with folder suffix:", currentSettings.defaultFolderSuffix);
 
     // Find all attachment folders
     const root = this.plugin.app.vault.getRoot();
@@ -225,13 +223,13 @@ export class AttachmentManagerView extends ItemView {
       }
     });
 
-    console.log(`AttachmentManagerView: Found ${items.length} attachments`);
+    console.debug(`AttachmentManagerView: Found ${items.length} attachments`);
     return items;
   }
 
   private findNoteForAttachmentFolder(
     attachmentFolder: TFolder,
-    pathResolver: any
+    pathResolver: PathResolver
   ): TFile | null {
     // Try to find the note by matching folder name pattern
     // Use latest settings
@@ -307,7 +305,7 @@ export class AttachmentManagerView extends ItemView {
       text: t("attachmentManager.rename")
     });
     renameButton.onclick = () => {
-      this.showRenameDialog(item);
+      void this.showRenameDialog(item);
     };
 
     // Delete button
@@ -325,7 +323,7 @@ export class AttachmentManagerView extends ItemView {
         text: t("attachmentManager.openNote")
       });
       openNoteButton.onclick = () => {
-        this.plugin.app.workspace.openLinkText(item.noteFile!.path, "", true);
+        void this.plugin.app.workspace.openLinkText(item.noteFile!.path, "", true);
       };
     }
   }
@@ -355,7 +353,7 @@ export class AttachmentManagerView extends ItemView {
     modal.open();
   }
 
-  private async showRenameDialog(item: AttachmentItem) {
+  private showRenameDialog(item: AttachmentItem) {
     const defaultName = item.file.basename;
     const modal = new RenameImageModal(
       this.plugin.app,
@@ -383,7 +381,7 @@ export class AttachmentManagerView extends ItemView {
       item.file,
       async () => {
         // Delete the file
-        await this.plugin.app.vault.trash(item.file, true);
+        await this.plugin.app.fileManager.trashFile(item.file);
         // Refresh the view
         await this.render();
         // Refresh file attachment trees

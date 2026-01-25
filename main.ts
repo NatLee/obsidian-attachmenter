@@ -128,7 +128,7 @@ export default class AttachmenterPlugin extends Plugin {
       this.app.vault.on("rename", (file, oldPath) => {
         // Handle attachment folder renaming
         void this.renameHandler.handle(file, oldPath);
-        
+
         // Check if the renamed file is the currently active file
         const activeFile = this.app.workspace.getActiveFile();
         if (activeFile && activeFile.path === file.path) {
@@ -188,7 +188,7 @@ export default class AttachmenterPlugin extends Plugin {
               const view = leaf.view as AttachmentManagerView;
               if (view && typeof view.render === 'function') {
                 // Force render to use latest settings
-                view.render();
+                void view.render();
               }
             } catch (error) {
               console.error("Error refreshing attachment manager view:", error);

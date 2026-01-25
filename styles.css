@@ -999,3 +999,15 @@
 .attachmenter-preview-modal .attachmenter-modal-preview {
   max-height: 600px;
 }
+
+/* Manager count badge styling */
+.attachmenter-manager-count {
+  margin-left: 0.5em;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+/* Folder note button styling */
+.attachmenter-folder-note-btn {
+  margin-left: 1em;
+}
