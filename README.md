@@ -67,8 +67,6 @@ This is how Attachmenter computes the attachment folder path in the current vers
   - Windows-forbidden characters (`< > : " / \ | ? *`) are replaced with spaces
   - Consecutive spaces are collapsed, and leading/trailing spaces/dots are trimmed
 
-<!-- TODO: Add a diagram: “note path -> attachment folder path” (include a case with #) -->
-
 ### 2) Paste image modal (keep / delete / change path)
 
 When you paste an image in Markdown or Canvas, Attachmenter will:
@@ -82,8 +80,6 @@ When you paste an image in Markdown or Canvas, Attachmenter will:
 
 ![paste image modal](./docs/paste-image.png)
 
-<!-- TODO: Add a GIF: paste image → auto move → choose Keep/Delete -->
-
 ### 3) Download remote images (Markdown / Canvas)
 
 In the current version, you can trigger this from:
@@ -95,7 +91,7 @@ In the current version, you can trigger this from:
   - Right-click a `.md` file → `Download remote images`
   - Note: this entry only applies to `.md` (use the command palette for Canvas)
 
-<!-- TODO: Add a screenshot: the File Explorer context menu item “Download remote images” -->
+![download remote images](./docs/download-image.gif)
 
 ### 4) File Explorer attachment tree (remote hints + quick actions)
 
@@ -116,8 +112,6 @@ What you can do after expanding in the current implementation:
 
 ![attachment tree](./docs/attachment-tree.gif)
 
-<!-- TODO: Add a screenshot: globe/layers icon meaning “this note still has remote images” -->
-
 ### 5) Attachment Manager view
 
 This view lists all attachments across the vault (folders matching the configured suffix) and groups items by folder.
@@ -132,7 +126,7 @@ In this view you can:
 - Preview / Rename / Delete attachments
 - Open the related note (when it can be inferred from the folder name)
 
-<!-- TODO: Add a screenshot: Attachment Manager view (list + grouping) -->
+![attachment manager](./docs/attachment-manager.gif)
 
 ---
 
@@ -159,7 +153,6 @@ The table below lists the settings currently present in the UI (defaults come fr
 | **Highlight expanded file title** | Highlight the file row when popover is expanded | Off |
 | **Border accent color** | Highlight border color (empty = theme accent) | `""` |
 
-
 ---
 
 ## Tool: Path Check & Repair
@@ -179,7 +172,7 @@ Repair modes:
 - **Preview Changes**: generates a change plan without writing anything (dry-run)
 - **Execute Changes**: creates/renames folders, moves images, and updates links
 
-<!-- TODO: Add a screenshot: Path Check stat cards + Preview Changes screen -->
+![path checking](./docs/path-checking.gif)
 
 ---
 
