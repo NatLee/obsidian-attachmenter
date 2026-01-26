@@ -1,210 +1,291 @@
-# Obsidian Attachmenter
+# Attachmenter (Obsidian plugin)
 
-A unified attachment management plugin for [Obsidian](https://obsidian.md) that automatically downloads remote images, manages per-note attachment folders, and provides flexible organization tools.
+I built Attachmenter as a “per-note first” attachment workflow for Obsidian: it creates an attachment folder per note, manages pasted images, downloads remote images (including Canvas), shows attachments inline in File Explorer, and includes tools for path check/repair and cleanup.
 
----
+> The UI supports multiple languages: English / 繁體中文 / 简体中文 / 日本語 (configurable in settings).
 
-## 🌟 Feature Highlights
+## Why I built this
 
-- 📥 **Remote Image Download** — One-click download of all remote images in notes and Canvas
-- 📁 **Per-Note Attachment Folders** — Automatic folder creation and organization
-- 📋 **Paste Image Management** — Keep, delete, or relocate pasted images instantly
-- 🌲 **File Attachment Tree** — Inline attachment view in File Explorer with quick actions
-- 🔍 **Path Validation & Repair** — Comprehensive scanning and auto-fix for attachment issues
-- 🌐 **Multi-Language** — English, 繁體中文, 简体中文
+I wanted a single plugin that keeps attachments predictable and easy to maintain:
 
----
-
-## 🙏 Acknowledgments
-
-This plugin is a fusion of two excellent plugins:
-
-- **[Attachment Manager](https://github.com/chenfeicqq/obsidian-attachment-manager)** by [chenfeicqq](https://github.com/chenfeicqq)
-  - Simple per-note attachment folder structure
-  - Remote image downloading
-  - Folder visibility toggle with ribbon icon
-
-- **[Attachment Management](https://github.com/trganda/obsidian-attachment-management)** by [trganda](https://github.com/trganda)
-  - Flexible path templates with variables
-  - Override settings for files/folders
-  - Advanced attachment naming patterns
+- I prefer **one attachment folder per note**, next to the note, so moving/archiving a note stays simple.
+- I wanted **remote images to become local files** with minimal friction.
+- I needed **maintenance tools** (scan/repair/cleanup) so an existing vault can be brought into a consistent structure.
 
 ---
 
-## ✨ Features
+## Feature overview
 
-### Remote Image Download
+- **Per-note attachment folder**
+  - Predictable folder location: `<note-folder>/<note-name><folder-suffix>`
+  - Example: `Notes/ProjectA.md` → `Notes/ProjectA_Attachments/`
+- **Paste image management**
+  - Detects Obsidian-generated files named like `Pasted image ...`
+  - Automatically moves them into the note’s attachment folder and updates links
+  - A modal lets you **Keep / Delete / Change location**
+- **Remote image download**
+  - Supports Markdown `![alt](https://...)`
+  - Supports Canvas (downloads remote `link` nodes and converts them into `file` nodes)
+  - Replaces links with local files and preserves alt text when possible
+- **File Explorer attachment tree**
+  - Adds an expand button on the right side of each file row in File Explorer
+  - Quick actions: preview / rename / delete, plus “this file still has remote images” hints
+- **Attachment Manager view**
+  - Centralized view of all attachments, grouped by folder
+  - Preview / rename / delete, and jump back to the related note
+- **Path Check & Repair**
+  - Scans `.md` and `.canvas` to validate attachment folders and image links
+  - Supports both **Preview changes (dry-run)** and **Execute fixes**
+- **Cleanup empty attachment folders**
+  - Finds folders that match the configured suffix and are empty, then lets you delete them (to system trash)
+- **Show/Hide attachment folders**
+  - Ribbon button + command palette command + optional status bar indicator
+  - Optional AERO semi-transparent styling
 
-| Feature | Description |
-|---------|-------------|
-| One-Click Download | Scans notes for remote image URLs and downloads them locally |
-| Format Support | Works with Markdown (`![alt](url)`) and Wiki (`![[url]]`) links |
-| Alt Text Preserved | Original alt text is maintained after replacement |
-| Canvas Support | Full support for Obsidian Canvas files |
-| Conflict Prevention | Automatically appends numbers to avoid filename conflicts |
+---
 
-**How to use:**
-- Command Palette: `Download remote images in active file`
-- File Explorer: Right-click → `Download remote images`
+## Installation
 
-### Attachment Folder Management
+1. Download `main.js`, `manifest.json`, `styles.css` from [Releases](https://github.com/natlee/obsidian-attachmenter/releases)
+2. Put them into your vault at `.obsidian/plugins/obsidian-attachmenter/`
+3. Restart Obsidian → Settings → Community plugins → enable `Attachmenter`
 
-| Feature | Description |
-|---------|-------------|
-| Per-Note Folders | Creates `NoteName_Attachments/` folder for each note |
-| Custom Naming | Configure folder suffix and file naming patterns |
-| Auto-Rename | Folders rename automatically when notes are renamed |
-| Hide/Show Toggle | Ribbon icon and command to toggle folder visibility |
-| AERO Style | Semi-transparent styling for a cleaner look |
+---
 
-### Paste Image Management
+## Quick start (usage)
 
-When you paste an image, a modal appears with options:
+### 1) Per-note attachment folder rules
 
-- **Keep** — Confirm and keep the image in its current location
-- **Delete** — Remove the image file and its link from your note
-- **Change Location** — Move the image to a different folder path
+This is how Attachmenter computes the attachment folder path in the current version:
+
+- **Folder path**: `<note-dir>/<sanitized-notename><sanitized-suffix>`
+  - `note-dir`: the note’s parent folder
+  - `notename`: note filename without `.md`
+  - `suffix`: “Folder suffix” in settings
+- **Cross-platform sanitization**
+  - `#` is replaced with a space
+  - Windows-forbidden characters (`< > : " / \ | ? *`) are replaced with spaces
+  - Consecutive spaces are collapsed, and leading/trailing spaces/dots are trimmed
+
+<!-- TODO: Add a diagram: “note path -> attachment folder path” (include a case with #) -->
+
+### 2) Paste image modal (keep / delete / change path)
+
+When you paste an image in Markdown or Canvas, Attachmenter will:
+
+- Move the `Pasted image ...` file into the active note’s attachment folder
+- Update the link in the note / Canvas
+- Show a management modal where you can choose:
+  - **Keep**: keep the image
+  - **Delete**: delete the image file and remove its reference from the note/Canvas
+  - **Change location**: manually edit the target path (free-form input)
 
 ![paste image modal](./docs/paste-image.png)
 
-### File Attachment Tree
+<!-- TODO: Add a GIF: paste image → auto move → choose Keep/Delete -->
 
-Expandable attachment trees directly in the File Explorer:
+### 3) Download remote images (Markdown / Canvas)
 
-- Click the chevron (▶) next to files to expand attachment list
-- Quick actions on hover: **Preview** | **Rename** | **Delete**
-- Shows attachment count badges
-- Performance optimized with lazy loading (20 items initially)
+In the current version, you can trigger this from:
+
+- **Command Palette**
+  - `Download remote images in active file` (display text depends on UI language)
+  - Runs against the currently active file; supports `.md` and `.canvas`
+- **File Explorer context menu**
+  - Right-click a `.md` file → `Download remote images`
+  - Note: this entry only applies to `.md` (use the command palette for Canvas)
+
+<!-- TODO: Add a screenshot: the File Explorer context menu item “Download remote images” -->
+
+### 4) File Explorer attachment tree (remote hints + quick actions)
+
+When enabled, each Markdown file row in File Explorer gets a small button:
+
+- **Local attachments exist**: you can expand to see the attachment list
+- **Remote images exist**: shown with a “globe/layers” hint; expand to download one-by-one or Download All
+
+What you can do after expanding in the current implementation:
+
+- **Local attachments**
+  - Preview / Rename (updates references in `.md`/`.canvas`) / Delete (to system trash)
+  - Open the folder in your system file explorer
+  - Delete the whole attachment folder (to system trash)
+- **Remote images**
+  - Preview remote images
+  - Download a single image or Download All (updates links in the note)
 
 ![attachment tree](./docs/attachment-tree.gif)
 
-### Attachment Manager View
+<!-- TODO: Add a screenshot: globe/layers icon meaning “this note still has remote images” -->
 
-A dedicated view for centralized attachment management:
+### 5) Attachment Manager view
 
-- Attachments grouped by folder
-- Preview, rename, delete with single clicks
-- Jump to associated notes
-- Real-time updates on file changes
+This view lists all attachments across the vault (folders matching the configured suffix) and groups items by folder.
 
-**Open via:** Command Palette → `Open attachment folder manager`
+Entry point in the current version:
 
-### Path Validation & Repair
+- A dedicated **Attachment Manager** button appears at the top of File Explorer (can be disabled in settings)
+  - Clicking it opens the `Attachment Manager` view
 
-Comprehensive tool to scan and fix attachment organization issues:
+In this view you can:
 
-| Statistics | Issues Detected |
-|------------|-----------------|
-| Files with/without attachments | Missing folders |
-| Resolved/unresolved links | Name mismatches |
-| Markdown vs Wiki format | Invalid characters |
+- Preview / Rename / Delete attachments
+- Open the related note (when it can be inferred from the folder name)
 
-**Features:**
-- **Preview Changes** — Dry-run mode to review before executing
-- **Auto-Fix** — Creates folders, renames, moves images, updates links
-
-**Access via:** Settings → `Check paths` button
-
-### Internationalization
-
-| Language | Code |
-|----------|------|
-| English | `en` |
-| 繁體中文 | `zh-Hant` |
-| 简体中文 | `zh-Hans` |
+<!-- TODO: Add a screenshot: Attachment Manager view (list + grouping) -->
 
 ---
 
-## ⚙️ Installation
+## Settings (based on current code)
 
-1. Download `main.js`, `manifest.json`, `styles.css` from [Releases](https://github.com/natlee/obsidian-attachmenter/releases)
-2. Create folder: `.obsidian/plugins/obsidian-attachmenter/`
-3. Move downloaded files into the folder
-4. Reload Obsidian and enable the plugin in Settings → Community Plugins
-
----
-
-## 🔧 Settings
+The table below lists the settings currently present in the UI (defaults come from `DEFAULT_SETTINGS`):
 
 | Setting | Description | Default |
-|---------|-------------|---------|
-| **Language** | Interface language | English |
-| **Folder suffix** | Suffix for attachment folders (e.g., `_Attachments`) | `_Attachments` |
-| **Attachment name format** | Template using `{notename}` and `{date}` | `{notename}-{date}` |
-| **Date format** | Moment.js format for `{date}` variable | `YYYYMMDDHHmmssSSS` |
-| **Hide attachment folders** | Toggle folder visibility in File Explorer | Off |
-| **AERO folder style** | Semi-transparent folder styling | On |
-| **Show status bar indicator** | Shows "Attachment folders hidden" when applicable | On |
-| **Show ribbon icon** | Toggle button in left sidebar | On |
-| **Show attachment manager button** | Button in File Explorer | On |
-| **Show file attachment tree** | Inline attachment trees in File Explorer | On |
-| **Auto rename attachment folder** | Rename folder when note is renamed | On |
-| **Prompt to rename images** | Ask for new name when moving images during repair | On |
+|---|---|---|
+| **Language** | UI language | `en` |
+| **Folder suffix** | Suffix for per-note attachment folders | `_Attachments` |
+| **Attachment name format** | Filename template (supports `{notename}`, `{date}`) | `{notename}-{date}` |
+| **Date format** | Moment.js format for `{date}` | `YYYYMMDDHHmmssSSS` |
+| **Auto rename attachment folder** | Rename the attachment folder when the note is renamed | On |
+| **Rename confirmation behavior** | Rename confirmation strategy | `ask` |
+| **Prompt to rename images** | Prompt to rename images when moving them during Path Check | On |
+| **Show ribbon icon** | Show the show/hide toggle in the left ribbon | On |
+| **Show status bar indicator** | Show “Attachment folders hidden” in the status bar | On |
+| **Show attachment manager button** | Show the Attachment Manager button in File Explorer | On |
+| **Hide attachment folders** | Hide attachment folders in File Explorer | Off |
+| **AERO folder style** | Semi-transparent styling for attachment folders | On |
+| **Show file attachment tree** | Inline attachment tree in File Explorer | On |
+| **Show remote hint** | Show remote-image hint + download entry in the tree | On |
+| **Highlight expanded file title** | Highlight the file row when popover is expanded | Off |
+| **Border accent color** | Highlight border color (empty = theme accent) | `""` |
+
+> Note: `Rename confirmation behavior` currently appears in Settings UI, but I don’t see it being applied elsewhere in code yet (possibly reserved for future use).
 
 ---
 
-## 🛠️ Development
+## Tool: Path Check & Repair
 
-```bash
-# Clone the repository
-git clone https://github.com/natlee/obsidian-attachmenter.git
-cd obsidian-attachmenter
+Entry point:
 
-# Install dependencies
-npm install
+- Settings → Tools & Maintenance → **Check paths**
 
-# Development mode (watch)
-npm run dev
+It scans `.md` and `.canvas` files and shows:
 
-# Production build
-npm run build
-```
+- File count / image link count / resolved vs unresolved links
+- Expected vs actual attachment folders (exists/missing/name mismatch)
+- “Invalid character” hints (e.g. `#` or Windows forbidden characters)
 
----
+Repair modes:
 
-## 📝 Technical Details
+- **Preview Changes**: generates a change plan without writing anything (dry-run)
+- **Execute Changes**: creates/renames folders, moves images, and updates links
 
-**Supported image formats:** `png`, `jpg/jpeg`, `gif`, `webp`, `svg`, `bmp`, `apng`, `avif`, `ico`, `tif`
-
-**Link format support:**
-- Markdown: `![alt text](path/to/image.png)`
-- Wiki: `![[image.png]]` or `![[image.png|alt text]]`
-
-**Path sanitization:** Invalid characters (`#`, `<`, `>`, `:`, `"`, `|`, `?`, `*`) are automatically handled.
+<!-- TODO: Add a screenshot: Path Check stat cards + Preview Changes screen -->
 
 ---
 
-## ❓ FAQ
+## Tool: Cleanup empty attachment folders
+
+Entry point:
+
+- Settings → Tools & Maintenance → **Cleanup**
+
+Finds folders whose names end with the configured suffix and are empty, and lets you delete them (to system trash).
+
+<!-- TODO: Add a screenshot: Cleanup results list + Delete All -->
+
+---
+
+## Commands & entry points (reference)
+
+| Type | Entry | Description |
+|---|---|---|
+| Command palette | `download-remote-images-active` | Download remote images in the current active file (`.md`/`.canvas`) |
+| Command palette | `toggle-folder-visibility` | Show/hide attachment folders (syncs with the ribbon toggle) |
+| File Explorer context menu | `Download remote images` | Download remote images for the selected `.md` file |
+
+---
+
+## Technical details
+
+- **Remote image download**
+  - Determines extension from HTTP `content-type`; if missing, falls back to URL suffix guessing
+  - Primary support: `png`, `jpg/jpeg`, `gif`, `webp`, `svg`, `bmp`, `apng`, `avif`, `ico`, `tif`
+- **Link formats**
+  - Markdown images: `![alt](path-or-url)`
+  - Wiki images (used by Path Check/repair): `![[image.png]]`, `![[image.png|alt]]`
+- **Filename/folder sanitization (cross-platform)**
+  - Replaces invalid characters with spaces and collapses whitespace
+  - Special case: `#` → space
+- **Obsidian settings impact (while enabled)**
+  - The plugin backs up and may adjust the vault `newLinkFormat`; if it’s not `relative` or `shortest`, it temporarily sets it to `relative`
+  - Restores the original value on unload
+
+---
+
+## FAQ
 
 <details>
 <summary><b>What happens when I rename a note?</b></summary>
 
-If "Auto rename attachment folder" is enabled, the attachment folder is automatically renamed to match, and all links are updated.
+If “Auto rename attachment folder” is enabled, Attachmenter will try to rename the old attachment folder to match the new note name. If links don’t update as expected, use the “Path Check” tool to repair.
 </details>
 
 <details>
 <summary><b>Can I use this with existing attachments?</b></summary>
 
-Yes! Use the Path Validation tool (Settings → Check paths) to reorganize existing attachments and update all links automatically.
+Yes. Run “Path Check” from settings, then use Preview/Execute to move images into per-note attachment folders and update references in `.md` / `.canvas`.
 </details>
 
 <details>
-<summary><b>How do I use custom date formats?</b></summary>
+<summary><b>How do I write custom date formats?</b></summary>
 
-The date format uses [Moment.js syntax](https://momentjs.com/docs/#/displaying/format/). Examples:
+The `{date}` placeholder uses [Moment.js formatting](https://momentjs.com/docs/#/displaying/format/). Examples:
 - `YYYY-MM-DD` → `2023-10-27`
 - `YYYYMMDD_HHmmss` → `20231027_143025`
 </details>
 
 ---
 
-## 📄 License
+## Development
+
+```bash
+# Clone
+git clone https://github.com/natlee/obsidian-attachmenter.git
+cd obsidian-attachmenter
+
+# Install dependencies
+npm install
+
+# Dev (watch)
+npm run dev
+
+# Build
+npm run build
+```
+
+---
+
+## Acknowledgements
+
+This plugin is inspired by / integrates ideas from:
+
+- **[Attachment Manager](https://github.com/chenfeicqq/obsidian-attachment-manager)** by [chenfeicqq](https://github.com/chenfeicqq)
+  - Per-note attachment folders
+  - Remote image downloading
+  - Folder visibility toggling
+- **[Attachment Management](https://github.com/trganda/obsidian-attachment-management)** by [trganda](https://github.com/trganda)
+  - Path/naming templates and a more complete attachment management approach
+
+---
+
+## License
 
 [MIT License](LICENSE.MD)
 
 ---
 
-## 🔗 Links
+## Links
 
-- [GitHub Repository](https://github.com/natlee/obsidian-attachmenter)
-- [Report Issues](https://github.com/natlee/obsidian-attachmenter/issues)
+- GitHub: `https://github.com/natlee/obsidian-attachmenter`
+- Issues: `https://github.com/natlee/obsidian-attachmenter/issues`

@@ -477,7 +477,7 @@ export class PathCheckModal extends Modal {
         }
 
         // Generate default name using NameResolver
-        const defaultBaseName = this.nameResolver.buildBaseName(file, (window as any).moment());
+        const defaultBaseName = this.nameResolver.buildBaseName(file, moment());
 
         // Determine the final name based on settings
         let finalBaseName: string;
@@ -586,7 +586,7 @@ export class PathCheckModal extends Modal {
             // Generate default name using NameResolver
             const defaultBaseName = this.nameResolver.buildBaseName(
               file,
-              (window as any).moment()
+              moment()
             );
 
             // Determine the final name based on settings
@@ -834,7 +834,7 @@ export class PathCheckModal extends Modal {
         }
 
         // Generate default name using NameResolver
-        const defaultBaseName = this.nameResolver.buildBaseName(file, (window as any).moment());
+        const defaultBaseName = this.nameResolver.buildBaseName(file, moment());
 
         // For dry-run, we use default name (can't prompt user)
         // In actual execution, this would prompt if settings.promptRenameImage is true
@@ -924,7 +924,7 @@ export class PathCheckModal extends Modal {
             // Generate default name using NameResolver
             const defaultBaseName = this.nameResolver.buildBaseName(
               file,
-              (window as any).moment()
+              moment()
             );
 
             // For dry-run, use default name
