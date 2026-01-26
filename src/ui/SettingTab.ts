@@ -332,8 +332,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     defaultValue: string,
     onSave: (value: string) => Promise<void>
   ) {
-    let textComponent: TextComponent;
-    let pickerComponent: ColorComponent;
+    let textComponent: TextComponent | null = null;
+    let pickerComponent: ColorComponent | null = null;
 
     const setting = new Setting(containerEl)
       .setName(name)
@@ -384,7 +384,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     // We need to define updateSliderFromColor before creating the slider so we can use it, 
     // but the slider needs to be created first.
     // So we define the variable first.
-    let slider: SliderComponent;
+    let slider: SliderComponent | null = null;
 
     // Helper to update slider UI from color string
     const updateSliderFromColor = (colorVal: string) => {
@@ -456,8 +456,10 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           .setValue(initialValue.startsWith("#") ? initialValue : "#000000")
           .onChange(async (value) => {
             // Update text field
-            textComponent.setValue(value);
-            textComponent.inputEl.removeClass("attachmenter-input-error"); // clear error
+            if (textComponent) {
+              textComponent.setValue(value);
+              textComponent.inputEl.removeClass("attachmenter-input-error"); // clear error
+            }
             previewEl.style.backgroundColor = value;
             updateSliderFromColor(value); // Sync slider
             await onSave(value);
@@ -469,8 +471,10 @@ export class AttachmenterSettingTab extends PluginSettingTab {
           .setTooltip(t("common.restoreDefault"))
           .onClick(async () => {
             // Restore to default
-            textComponent.setValue(defaultValue);
-            textComponent.inputEl.removeClass("attachmenter-input-error");
+            if (textComponent) {
+              textComponent.setValue(defaultValue);
+              textComponent.inputEl.removeClass("attachmenter-input-error");
+            }
             previewEl.style.backgroundColor = getPreviewColor(defaultValue);
             updateSliderFromColor(defaultValue);
 
@@ -480,7 +484,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
             // If it's empty (theme default), we DO NOT touch the picker.
             // Touching the picker when it doesn't match the new value might trigger onChange 
             // and overwrite our just-set default value.
-            if (defaultValue.startsWith("#")) {
+            if (defaultValue.startsWith("#") && pickerComponent) {
               pickerComponent.setValue(defaultValue);
             }
           })
