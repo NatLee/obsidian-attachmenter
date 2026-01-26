@@ -16,7 +16,7 @@ export interface ValidationIssue {
   file: TFile;
   expectedFolderPath: string;
   actualFolderPath: string | null;
-  issue: "missing" | "name_mismatch" | "invalid_chars";
+  issue: "missing" | "name_mismatch" | "invalid_chars" | "misplaced";
   invalidChars?: string[];
   imageLinks?: ImageLink[]; // 找到的圖片連結
 }
@@ -30,7 +30,7 @@ export interface DetailedStatistics {
     withAttachments: number;           // 有附件資料夾的檔案數
     withoutAttachments: number;        // 沒有附件資料夾的檔案數
   };
-  
+
   // 圖片連結統計
   imageLinks: {
     total: number;                    // 總圖片連結數
@@ -39,7 +39,7 @@ export interface DetailedStatistics {
     markdown: number;                  // Markdown 格式連結數
     wiki: number;                     // Wiki 格式連結數
   };
-  
+
   // 附件資料夾統計
   attachmentFolders: {
     totalExpected: number;            // 預期應存在的資料夾數
@@ -48,13 +48,14 @@ export interface DetailedStatistics {
     correctlyNamed: number;            // 正確命名的資料夾數
     incorrectlyNamed: number;          // 錯誤命名的資料夾數
   };
-  
+
   // 問題統計（保留現有）
   issues: {
     total: number;
     missing: number;
     nameMismatch: number;
     invalidChars: number;
+    misplaced: number;
   };
 }
 
@@ -65,6 +66,7 @@ export interface ValidationResult {
     missing: number;
     nameMismatch: number;
     invalidChars: number;
+    misplaced: number;
   };
   statistics: DetailedStatistics;  // 新增
 }
@@ -348,6 +350,7 @@ export class PathValidator {
         missing: 0,
         nameMismatch: 0,
         invalidChars: 0,
+        misplaced: 0,
       },
     };
 
@@ -401,7 +404,7 @@ export class PathValidator {
         if (actualFolderPath) {
           statistics.attachmentFolders.existing++;
           filesWithAttachments.add(file.path);
-          
+
           // Check if folder name matches expected (after sanitization)
           const isCorrectlyNamed = normalizePath(actualFolderPath) === normalizePath(expectedFolderPath);
           if (isCorrectlyNamed) {
@@ -432,7 +435,7 @@ export class PathValidator {
       }
 
       // Folder exists, check if name matches expected (considering sanitization)
-      
+
       // Check for invalid characters in the original note name
       const invalidChars = PathSanitizer.findInvalidCharacters(file.basename);
       if (invalidChars.length > 0) {
@@ -456,6 +459,35 @@ export class PathValidator {
           imageLinks,
         });
       }
+
+      // Check for misplaced attachments if folder exists
+      if (actualFolderPath) {
+        const misplacedLinks: ImageLink[] = [];
+
+        for (const link of imageLinks) {
+          if (!link.resolvedPath) continue;
+
+          // Check if the resolved path is inside the actual attachment folder
+          // We use startWith with the folder path + "/" to ensure it's a child
+          // Also handle case where actualFolderPath is root "" (unlikely but possible)
+          const folderPrefix = actualFolderPath ? actualFolderPath + "/" : "";
+
+          // Skip if already inside
+          if (link.resolvedPath.startsWith(folderPrefix)) continue;
+
+          misplacedLinks.push(link);
+        }
+
+        if (misplacedLinks.length > 0) {
+          issues.push({
+            file,
+            expectedFolderPath,
+            actualFolderPath, // Correct folder exists
+            issue: "misplaced",
+            imageLinks: misplacedLinks,
+          });
+        }
+      }
     }
 
     // Update files with/without attachments statistics
@@ -467,12 +499,14 @@ export class PathValidator {
       missing: issues.filter((i) => i.issue === "missing").length,
       nameMismatch: issues.filter((i) => i.issue === "name_mismatch").length,
       invalidChars: issues.filter((i) => i.issue === "invalid_chars").length,
+      misplaced: issues.filter((i) => i.issue === "misplaced").length,
     };
 
     statistics.issues.total = issues.length;
     statistics.issues.missing = summary.missing;
     statistics.issues.nameMismatch = summary.nameMismatch;
     statistics.issues.invalidChars = summary.invalidChars;
+    statistics.issues.misplaced = summary.misplaced;
 
     return {
       totalFiles: relevantFiles.length,

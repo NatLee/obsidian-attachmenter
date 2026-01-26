@@ -145,19 +145,23 @@ export class HideFolderRibbon {
     });
 
     // Listen for vault changes to update section count
+    // Listen for vault changes to update section count and folder visibility
     this.plugin.registerEvent(
       this.plugin.app.vault.on("create", () => {
         this.updateAttachmentFolderSection();
+        this.refresh(true);
       })
     );
     this.plugin.registerEvent(
       this.plugin.app.vault.on("delete", () => {
         this.updateAttachmentFolderSection();
+        this.refresh(true);
       })
     );
     this.plugin.registerEvent(
       this.plugin.app.vault.on("rename", () => {
         this.updateAttachmentFolderSection();
+        this.refresh(true);
       })
     );
   }

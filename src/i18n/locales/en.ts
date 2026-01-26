@@ -157,6 +157,7 @@ export const en: TranslationMap = {
     missingFoldersTitle: "Missing folders",
     nameMismatchesTitle: "Name mismatches",
     invalidCharsTitle: "Invalid characters",
+    misplacedTitle: "Misplaced attachments",
     expected: "Expected: {path}",
     actual: "Actual: {path}",
     nA: "N/a",
@@ -205,7 +206,8 @@ export const en: TranslationMap = {
         title: "Issues",
         missing: "Missing",
         nameMismatch: "Name mismatch",
-        invalidChars: "Invalid characters"
+        invalidChars: "Invalid characters",
+        misplaced: "Misplaced"
       }
     }
   },

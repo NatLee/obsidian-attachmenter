@@ -1,4 +1,4 @@
-import { TFile, TFolder, setIcon, View, Notice } from "obsidian";
+import { TFile, TFolder, setIcon, View, Notice, TAbstractFile } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { PathResolver } from "../path/PathResolver";
 import { t } from "../i18n/index";
@@ -59,27 +59,74 @@ export class FileAttachmentTree {
     }, 500);
 
     // Listen for vault changes to update attachment trees
+    // Listen for vault changes to update attachment trees
     this.plugin.registerEvent(
-      this.plugin.app.vault.on("create", () => {
+      this.plugin.app.vault.on("create", (file) => {
         if (this.isEnabled) {
+          this.debouncedRefresh();
+          this.handleVaultChange(file);
+        }
+      })
+    );
+    this.plugin.registerEvent(
+      this.plugin.app.vault.on("delete", (file) => {
+        if (this.isEnabled) {
+          // Pass the deleted file to check if it was in an open tree
+          this.handleVaultChange(file);
           this.debouncedRefresh();
         }
       })
     );
     this.plugin.registerEvent(
-      this.plugin.app.vault.on("delete", () => {
+      this.plugin.app.vault.on("rename", (file, oldPath) => {
         if (this.isEnabled) {
           this.debouncedRefresh();
+          this.handleVaultChange(file, oldPath);
         }
       })
     );
     this.plugin.registerEvent(
-      this.plugin.app.vault.on("rename", () => {
-        if (this.isEnabled) {
-          this.debouncedRefresh();
+      this.plugin.app.vault.on("modify", (file) => {
+        if (this.isEnabled && file instanceof TFile && this.expandedFiles.has(file.path)) {
+          this.refreshPopoverContent(file);
         }
       })
     );
+  }
+
+  private handleVaultChange(file: TAbstractFile, oldPath?: string) {
+    // Check if the file change affects any currently open attachment trees
+    if (this.expandedFiles.size === 0) return;
+
+    // Iterate through all expanded notes
+    for (const notePath of this.expandedFiles) {
+      const noteFile = this.plugin.app.vault.getAbstractFileByPath(notePath);
+      if (!(noteFile instanceof TFile)) continue;
+
+      const attachmentFolderPath = this.pathResolver.getAttachmentFolderForNote(noteFile);
+
+      // Check if the file is/was in this attachment folder
+      let shouldRefresh = false;
+
+      // Check current path (for create, rename)
+      if (file.path.startsWith(attachmentFolderPath + "/")) {
+        shouldRefresh = true;
+      }
+
+      // Check old path (for rename, delete - although delete doesn't have oldPath param, file.path is the deleted path)
+      if (!shouldRefresh && oldPath && oldPath.startsWith(attachmentFolderPath + "/")) {
+        shouldRefresh = true;
+      }
+
+      // For delete, file.path is the path of the deleted file
+      if (!shouldRefresh && !oldPath && file.path.startsWith(attachmentFolderPath + "/")) {
+        shouldRefresh = true;
+      }
+
+      if (shouldRefresh) {
+        this.refreshPopoverContent(noteFile);
+      }
+    }
   }
 
   private debouncedRefresh() {

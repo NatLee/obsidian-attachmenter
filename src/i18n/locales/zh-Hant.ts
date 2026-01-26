@@ -158,6 +158,7 @@ export const zhHant: TranslationMap = {
     missingFoldersTitle: "缺少的資料夾",
     nameMismatchesTitle: "名稱不符",
     invalidCharsTitle: "無效字元",
+    misplacedTitle: "位置錯誤的附件",
     expected: "預期：{path}",
     actual: "實際：{path}",
     nA: "不適用",
@@ -206,7 +207,8 @@ export const zhHant: TranslationMap = {
         title: "問題",
         missing: "缺失",
         nameMismatch: "名稱不符",
-        invalidChars: "無效字元"
+        invalidChars: "無效字元",
+        misplaced: "位置錯誤"
       }
     }
   },

@@ -147,10 +147,24 @@ export class PathCheckModal extends Modal {
       );
     }
 
+    const misplacedIssues = this.validationResult.issues.filter(
+      (i) => i.issue === "misplaced"
+    );
+
+    if (misplacedIssues.length > 0) {
+      this.renderIssueSection(
+        issuesContainer,
+        t("pathCheck.misplacedTitle") || "Misplaced Attachments",
+        misplacedIssues,
+        "misplaced"
+      );
+    }
+
     // Fix buttons
     if (
       missingIssues.length > 0 ||
       mismatchIssues.length > 0 ||
+      misplacedIssues.length > 0 ||
       invalidCharIssues.length > 0
     ) {
       const buttonContainer = contentEl.createDiv({
@@ -302,6 +316,11 @@ export class PathCheckModal extends Modal {
           value: stats.issues.invalidChars.toString(),
           status: stats.issues.invalidChars > 0 ? "warning" : "normal",
         },
+        {
+          label: t("pathCheck.statistics.issues.misplaced") || "Misplaced",
+          value: stats.issues.misplaced.toString(),
+          status: stats.issues.misplaced > 0 ? "error" : "normal",
+        },
       ],
       stats.issues.total === 0 ? "success" : "error"
     );
@@ -345,7 +364,7 @@ export class PathCheckModal extends Modal {
     container: HTMLElement,
     title: string,
     issues: ValidationIssue[],
-    issueType: "missing" | "name_mismatch" | "invalid_chars"
+    issueType: "missing" | "name_mismatch" | "invalid_chars" | "misplaced"
   ) {
     const section = container.createDiv({ cls: "attachmenter-issue-section" });
     section.createEl("h4", { text: `${title} (${issues.length})` });
@@ -385,6 +404,17 @@ export class PathCheckModal extends Modal {
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.noteName", { name: issue.file.basename }),
         });
+      } else if (issueType === "misplaced") {
+        issueItem.createEl("div", {
+          cls: "attachmenter-issue-detail",
+          text: t("pathCheck.expected", { path: issue.expectedFolderPath }),
+        });
+        if (issue.imageLinks) {
+          issueItem.createEl("div", {
+            cls: "attachmenter-issue-detail",
+            text: `${issue.imageLinks.length} ${t("common.attachments")}`,
+          });
+        }
       }
     });
 
@@ -528,33 +558,23 @@ export class PathCheckModal extends Modal {
         // Update markdown content
         const newImageFile = this.vault.getAbstractFileByPath(newImagePath);
         if (newImageFile instanceof TFile) {
-          if (imageLink.type === "markdown") {
-            // Update markdown link: ![alt](path)
-            const newLink = this.fileManager.generateMarkdownLink(
-              newImageFile,
-              file.path,
-              undefined,
-              imageLink.altText
-            );
-            // Ensure it's an image link
-            const imageLinkText = newLink.startsWith("!")
-              ? newLink
-              : `!${newLink}`;
-            content = content.replace(imageLink.match, imageLinkText);
-            contentModified = true;
-          } else if (imageLink.type === "wiki") {
-            // Update wiki link: ![[path]] or ![[path|alt]]
-            // Since attachment folder is in the same directory as the note,
-            // we can use basename for wiki links
-            const altPart = imageLink.altText
-              ? `|${imageLink.altText}`
-              : "";
-            // Use basename since the attachment folder is in the same directory
-            const newWikiLink = `![[${newImageFile.basename}${altPart}]]`;
-            // Replace only the first occurrence to handle multiple identical links correctly
-            content = content.replace(imageLink.match, newWikiLink);
-            contentModified = true;
-          }
+          // Simplify link updates using generateMarkdownLink for both types
+          // This respects Obsidian's link settings (relative/absolute/shortest)
+          const newLink = this.fileManager.generateMarkdownLink(
+            newImageFile,
+            file.path,
+            undefined,
+            imageLink.altText
+          );
+
+          // Ensure it's an image embed
+          const imageLinkText = newLink.startsWith("!")
+            ? newLink
+            : `!${newLink}`;
+
+          // Replace the old link
+          content = content.replace(imageLink.match, imageLinkText);
+          contentModified = true;
         }
       }
     } else if (file.extension === "canvas") {
@@ -645,7 +665,7 @@ export class PathCheckModal extends Modal {
                   (node.type === "link" && node.url === imageLink.linkText)
                 ) {
                   node.type = "file";
-                  node.file = newImageFile.basename;
+                  node.file = newImageFile.path;
                   contentModified = true;
                   break;
                 }
@@ -713,6 +733,16 @@ export class PathCheckModal extends Modal {
 
             fixed++;
           }
+        } else if (issue.issue === "misplaced") {
+          // Move misplaced images to correct folder
+          if (issue.imageLinks && issue.imageLinks.length > 0) {
+            await this.copyImagesToFolder(
+              issue.file,
+              issue.imageLinks,
+              issue.expectedFolderPath
+            );
+            fixed++;
+          }
         }
         // Note: invalid_chars issues don't need fixing - they're informational
         // The folders are already created with sanitized names
@@ -774,6 +804,15 @@ export class PathCheckModal extends Modal {
           });
 
           // Plan to move images if there are any
+          if (issue.imageLinks && issue.imageLinks.length > 0) {
+            await this.generateImageMovePlan(
+              issue.file,
+              issue.imageLinks,
+              issue.expectedFolderPath
+            );
+          }
+        } else if (issue.issue === "misplaced") {
+          // Plan to move misplaced images
           if (issue.imageLinks && issue.imageLinks.length > 0) {
             await this.generateImageMovePlan(
               issue.file,
@@ -874,15 +913,11 @@ export class PathCheckModal extends Modal {
           const altPart = imageLink.altText
             ? `|${imageLink.altText}`
             : "";
-          // Extract basename from newImagePath
+          // Extract basename from newImagePath (includes extension)
           const basename = newImagePath.substring(
             newImagePath.lastIndexOf("/") + 1
           );
-          const nameWithoutExt = basename.substring(
-            0,
-            basename.lastIndexOf(".")
-          );
-          newLink = `![[${nameWithoutExt}${altPart}]]`;
+          newLink = `![[${basename}${altPart}]]`;
         } else {
           continue;
         }
@@ -966,8 +1001,8 @@ export class PathCheckModal extends Modal {
             this.changePlan!.linkUpdates.push({
               noteFile: file,
               oldLink: imageLink.match,
-              newLink: nameWithoutExt,
-              linkType: "markdown", // Canvas uses markdown-like format
+              newLink: newImagePath, // Use full path for Canvas
+              linkType: "markdown",
             });
           }
         }
@@ -1242,25 +1277,18 @@ export class PathCheckModal extends Modal {
 
               // Update the link in content
               if (noteFile.extension === "md") {
-                // For markdown files, generate new link
-                let newLink: string;
-                if (move.linkType === "markdown") {
-                  newLink = this.fileManager.generateMarkdownLink(
-                    movedFile,
-                    noteFile.path,
-                    undefined,
-                    move.altText
-                  );
-                  // Ensure it's an image link
-                  if (!newLink.startsWith("!")) {
-                    newLink = `!${newLink}`;
-                  }
-                } else if (move.linkType === "wiki") {
-                  // For wiki links, use basename
-                  const altPart = move.altText ? `|${move.altText}` : "";
-                  newLink = `![[${movedFile.basename}${altPart}]]`;
-                } else {
-                  continue;
+                // For markdown files, generate new link using Obsidian API
+                // This ensures correct path resolution and extension handling
+                let newLink = this.fileManager.generateMarkdownLink(
+                  movedFile,
+                  noteFile.path,
+                  undefined,
+                  move.altText
+                );
+
+                // Ensure it's an image link
+                if (!newLink.startsWith("!")) {
+                  newLink = `!${newLink}`;
                 }
                 content = content.replace(move.oldLinkMatch, newLink);
                 contentModified = true;
@@ -1276,7 +1304,7 @@ export class PathCheckModal extends Modal {
                         (node.type === "link" && node.url === move.imageFile.basename)
                       ) {
                         node.type = "file";
-                        node.file = movedFile.basename;
+                        node.file = movedFile.path;
                         contentModified = true;
                         break;
                       }
