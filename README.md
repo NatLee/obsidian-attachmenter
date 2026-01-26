@@ -159,7 +159,6 @@ The table below lists the settings currently present in the UI (defaults come fr
 | **Highlight expanded file title** | Highlight the file row when popover is expanded | Off |
 | **Border accent color** | Highlight border color (empty = theme accent) | `""` |
 
-> Note: `Rename confirmation behavior` currently appears in Settings UI, but I don’t see it being applied elsewhere in code yet (possibly reserved for future use).
 
 ---
 
