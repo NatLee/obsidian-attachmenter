@@ -42,7 +42,7 @@ export const en: TranslationMap = {
     },
     showRemoteHint: {
       name: "Show hint for remote images",
-      desc: "Show the attachment tree expand icon even if the note only contains remote images and the inks are starting with http.",
+      desc: "Show the expand icon for attachments even if the note only has remote images with http links.",
     },
     folderDisplay: {
       name: "Folder display",

@@ -992,10 +992,6 @@ export class PathCheckModal extends Modal {
             const basename = newImagePath.substring(
               newImagePath.lastIndexOf("/") + 1
             );
-            const nameWithoutExt = basename.substring(
-              0,
-              basename.lastIndexOf(".")
-            );
 
             // Add to link updates plan
             this.changePlan!.linkUpdates.push({
