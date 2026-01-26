@@ -1,7 +1,7 @@
 {
   "id": "attachmenter",
   "name": "Attachmenter",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "minAppVersion": "0.15.0",
   "description": "Manage attachments with flexible paths, automatic naming, and remote image downloading.",
   "author": "natlee",

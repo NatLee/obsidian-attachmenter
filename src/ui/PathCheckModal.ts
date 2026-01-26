@@ -411,8 +411,9 @@ export class PathCheckModal extends Modal {
         this.app,
         imageFile,
         defaultBaseName,
-        async (newName: string) => {
+        (newName: string) => {
           resolve(newName);
+          return Promise.resolve();
         }
       );
       // Resolve with original name if modal closed without confirm

@@ -96,7 +96,7 @@ export const en: TranslationMap = {
     checkPaths: {
       name: "Check attachment folder paths",
       desc: "Validate all attachment folder paths and check for issues (invalid characters, missing folders, name mismatches).",
-      button: "Check paths"
+      button: "Check path"
     },
     renameConfirmation: {
       name: "Rename confirmation behavior",

@@ -314,7 +314,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       .addButton((button) =>
         button
           .setButtonText(t("settings.cleanup.button"))
-          .onClick(async () => {
+          .onClick(() => {
             const handler = new CleanupHandler(this.app, this.plugin);
             handler.checkEmptyFolders();
           })
