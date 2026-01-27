@@ -988,11 +988,6 @@ export class PathCheckModal extends Modal {
               linkType: "markdown", // Canvas uses markdown-like format
             });
 
-            // For canvas, the link update is just the basename
-            const basename = newImagePath.substring(
-              newImagePath.lastIndexOf("/") + 1
-            );
-
             // Add to link updates plan
             this.changePlan!.linkUpdates.push({
               noteFile: file,
