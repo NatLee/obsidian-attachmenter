@@ -91,9 +91,11 @@ In the current version, you can trigger this from:
   - Right-click a `.md` file → `Download remote images`
   - Note: this entry only applies to `.md` (use the command palette for Canvas)
 
-![download remote images](./docs/download-image.gif)
+![right click download](./docs/right-click-download.gif)
 
 ### 4) File Explorer attachment tree (remote hints + quick actions)
+
+![attachment tree](./docs/attachment-tree.gif)
 
 When enabled, each Markdown file row in File Explorer gets a small button:
 
@@ -110,7 +112,7 @@ What you can do after expanding in the current implementation:
   - Preview remote images
   - Download a single image or Download All (updates links in the note)
 
-![attachment tree](./docs/attachment-tree.gif)
+![download remote images from attachment tree](./docs/download-image.gif)
 
 ### 5) Attachment Manager view
 
@@ -183,8 +185,6 @@ Entry point:
 - Settings → Tools & Maintenance → **Cleanup**
 
 Finds folders whose names end with the configured suffix and are empty, and lets you delete them (to system trash).
-
-<!-- TODO: Add a screenshot: Cleanup results list + Delete All -->
 
 ---
 
