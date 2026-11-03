@@ -1,4 +1,4 @@
-import { TFile, Vault, normalizePath } from "obsidian";
+import { TFile, TFolder, Vault, normalizePath } from "obsidian";
 
 import type { AttachmenterSettings } from "../model/Settings";
 import { PathSanitizer } from "../lib/pathSanitizer";
@@ -39,6 +39,24 @@ export class PathResolver {
       folderPath = folderPath.substring(2);
     }
     return normalizePath(folderPath);
+  }
+
+  /**
+   * The note that owns an attachment folder: a sibling .md (preferred) or
+   * .canvas file whose attachment folder is exactly this folder. Only the
+   * folder's own parent directory is searched, since that is the only place
+   * the owner can live.
+   */
+  findNoteForAttachmentFolder(folder: TFolder): TFile | null {
+    let canvasOwner: TFile | null = null;
+    for (const sibling of folder.parent?.children ?? []) {
+      if (!(sibling instanceof TFile)) continue;
+      if (sibling.extension !== "md" && sibling.extension !== "canvas") continue;
+      if (this.getAttachmentFolderForNote(sibling) !== folder.path) continue;
+      if (sibling.extension === "md") return sibling;
+      if (!canvasOwner) canvasOwner = sibling;
+    }
+    return canvasOwner;
   }
 }
 

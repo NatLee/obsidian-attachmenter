@@ -4,7 +4,7 @@ import { buildFolderRegExp } from "./HideFolderRibbon";
 import { t } from "../i18n/index";
 import { RenameImageModal } from "./RenameImageModal";
 import { AttachmentRenameHandler } from "../handler/AttachmentRenameHandler";
-// import { PathResolver } from "../path/PathResolver";
+import { PathResolver } from "../path/PathResolver";
 import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
 import { AttachmentDeleteModal } from "./AttachmentDeleteModal";
 
@@ -228,40 +228,11 @@ export class AttachmentManagerView extends ItemView {
     return items;
   }
 
-  private findNoteForAttachmentFolder(
-    attachmentFolder: TFolder
-  ): TFile | null {
-    // Try to find the note by matching folder name pattern
-    // Use latest settings
-    const folderName = attachmentFolder.name;
-    const folderSuffix = this.plugin.settings.defaultFolderSuffix || "_Attachments";
-
-    // Extract note name from folder name (remove suffix)
-    if (folderName.endsWith(folderSuffix)) {
-      const noteName = folderName.substring(0, folderName.length - folderSuffix.length);
-
-      // Search for the note file
-      const allNotes = this.plugin.app.vault.getMarkdownFiles();
-      const folderDir = attachmentFolder.parent?.path || "";
-
-      // Try exact match first
-      let noteFile = allNotes.find(n =>
-        n.basename === noteName &&
-        (folderDir === "" || n.path.startsWith(folderDir))
-      );
-
-      if (!noteFile) {
-        // Try sanitized name match
-        noteFile = allNotes.find(n => {
-          const sanitized = n.basename.replace(/[#<>:"|?*]/g, " ");
-          return sanitized === noteName || sanitized.trim() === noteName.trim();
-        });
-      }
-
-      return noteFile || null;
-    }
-
-    return null;
+  /** The note (.md, or .canvas when there is no .md) that owns this attachment folder. */
+  private findNoteForAttachmentFolder(attachmentFolder: TFolder): TFile | null {
+    // Built per call so a changed folder suffix in settings is picked up
+    const pathResolver = new PathResolver(this.plugin.app.vault, this.plugin.settings);
+    return pathResolver.findNoteForAttachmentFolder(attachmentFolder);
   }
 
   private groupByFolder(items: AttachmentItem[]): Record<string, AttachmentItem[]> {

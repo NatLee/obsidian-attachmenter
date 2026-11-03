@@ -385,16 +385,6 @@ export class FileAttachmentTree {
       }
     }
 
-    // Final fallback: try to match by filename
-    if (!file) {
-      const titleText = (fileTitle as HTMLElement).textContent?.trim();
-      if (titleText) {
-        // Try to find file by basename or full name
-        const allFiles = this.plugin.app.vault.getMarkdownFiles();
-        file = allFiles.find(f => f.basename === titleText || f.name === titleText) || null;
-      }
-    }
-
     if (!file || file.extension !== 'md') {
       return;
     }
@@ -894,33 +884,10 @@ export class FileAttachmentTree {
     setIcon(expandButton, iconName);
   }
 
+  /** The Markdown note that owns this attachment folder, if any. */
   private getNoteFileForFolder(folder: TFolder): TFile | null {
-    // Try to find the note file that owns this attachment folder
-    const folderName = folder.name;
-    const folderSuffix = this.plugin.settings.defaultFolderSuffix || "_Attachments";
-
-    if (folderName.endsWith(folderSuffix)) {
-      const noteName = folderName.substring(0, folderName.length - folderSuffix.length);
-      const folderDir = folder.parent?.path || "";
-
-      const allNotes = this.plugin.app.vault.getMarkdownFiles();
-      let noteFile = allNotes.find(n =>
-        n.basename === noteName &&
-        (folderDir === "" || n.path.startsWith(folderDir))
-      );
-
-      if (!noteFile) {
-        // Try sanitized name match
-        noteFile = allNotes.find(n => {
-          const sanitized = n.basename.replace(/[#<>:"|?*]/g, " ");
-          return sanitized === noteName || sanitized.trim() === noteName.trim();
-        });
-      }
-
-      return noteFile || null;
-    }
-
-    return null;
+    const note = this.pathResolver.findNoteForAttachmentFolder(folder);
+    return note?.extension === "md" ? note : null;
   }
 
   private renderAttachmentTree(file: TFile, fileEl: HTMLElement) {
