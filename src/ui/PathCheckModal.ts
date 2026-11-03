@@ -19,6 +19,7 @@ import {
 } from "../lib/PathValidator";
 import { NameResolver } from "../path/NameResolver";
 import { RenameImageModal } from "./RenameImageModal";
+import { parseCanvasData } from "../lib/canvas";
 import { t } from "../i18n/index";
 
 export class PathCheckModal extends Modal {
@@ -376,41 +377,41 @@ export class PathCheckModal extends Modal {
         cls: "attachmenter-issue-item",
       });
 
-      issueItem.createEl("div", {
+      issueItem.createDiv({
         cls: "attachmenter-issue-file",
         text: issue.file.path,
       });
 
       if (issueType === "missing") {
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.expected", { path: issue.expectedFolderPath }),
         });
       } else if (issueType === "name_mismatch") {
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.expected", { path: issue.expectedFolderPath }),
         });
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.actual", { path: issue.actualFolderPath || t("pathCheck.nA") }),
         });
       } else if (issueType === "invalid_chars") {
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.invalidCharacters", { chars: issue.invalidChars?.join(", ") || t("pathCheck.nA") }),
         });
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.noteName", { name: issue.file.basename }),
         });
       } else if (issueType === "misplaced") {
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.expected", { path: issue.expectedFolderPath }),
         });
         if (issue.imageLinks) {
-          issueItem.createEl("div", {
+          issueItem.createDiv({
             cls: "attachmenter-issue-detail",
             text: `${issue.imageLinks.length} ${t("common.attachments")}`,
           });
@@ -580,8 +581,8 @@ export class PathCheckModal extends Modal {
     } else if (file.extension === "canvas") {
       // Process canvas file
       try {
-        const data = JSON.parse(content);
-        if (Array.isArray(data.nodes)) {
+        const data = parseCanvasData(content);
+        if (data) {
           for (const imageLink of imageLinks) {
             if (!imageLink.resolvedPath) {
               continue;
@@ -933,8 +934,8 @@ export class PathCheckModal extends Modal {
     } else if (file.extension === "canvas") {
       // Process canvas file
       try {
-        const data = JSON.parse(content);
-        if (Array.isArray(data.nodes)) {
+        const data = parseCanvasData(content);
+        if (data) {
           for (const imageLink of imageLinks) {
             if (!imageLink.resolvedPath) {
               continue;
@@ -1033,7 +1034,7 @@ export class PathCheckModal extends Modal {
     const upLevels = noteParts.length - commonLength;
     const downParts = imageParts.slice(commonLength);
     const relativeParts = [
-      ...Array(upLevels).fill(".."),
+      ...new Array<string>(upLevels).fill(".."),
       ...downParts,
       imageName,
     ];
@@ -1089,11 +1090,11 @@ export class PathCheckModal extends Modal {
         const itemEl = list.createDiv({
           cls: "attachmenter-change-plan-item",
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-file",
           text: t("pathCheck.inFile", { path: item.noteFile.path }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.toPath", { path: item.path }),
         });
@@ -1113,15 +1114,15 @@ export class PathCheckModal extends Modal {
         const itemEl = list.createDiv({
           cls: "attachmenter-change-plan-item",
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-file",
           text: t("pathCheck.inFile", { path: item.noteFile.path }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.fromPath", { path: item.from }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.toPath", { path: item.to }),
         });
@@ -1141,15 +1142,15 @@ export class PathCheckModal extends Modal {
         const itemEl = list.createDiv({
           cls: "attachmenter-change-plan-item",
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-file",
           text: t("pathCheck.inFile", { path: item.noteFile.path }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.fromPath", { path: item.fromPath }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.toPath", { path: item.toPath }),
         });
@@ -1169,15 +1170,15 @@ export class PathCheckModal extends Modal {
         const itemEl = list.createDiv({
           cls: "attachmenter-change-plan-item",
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-file",
           text: t("pathCheck.inFile", { path: item.noteFile.path }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.oldLink", { link: item.oldLink }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.newLink", { link: item.newLink }),
         });
@@ -1286,8 +1287,8 @@ export class PathCheckModal extends Modal {
               } else if (noteFile.extension === "canvas") {
                 // For canvas files, update the JSON node
                 try {
-                  const data = JSON.parse(content);
-                  if (Array.isArray(data.nodes)) {
+                  const data = parseCanvasData(content);
+                  if (data) {
                     // Find and update the node
                     for (const node of data.nodes) {
                       if (

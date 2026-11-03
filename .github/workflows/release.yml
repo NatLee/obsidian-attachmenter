@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # Required to sign and store artifact attestations (build provenance)
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,6 +49,14 @@ jobs:
           echo "✅ Build verification passed"
           echo "Files ready for release:"
           ls -lh main.js manifest.json styles.css 2>/dev/null || true
+
+      - name: Generate artifact attestation
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
 
       - name: Determine release tag
         id: release_tag

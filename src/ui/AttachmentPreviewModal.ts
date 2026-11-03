@@ -41,11 +41,11 @@ export class AttachmentPreviewModal extends Modal {
     const infoContainer = contentEl.createDiv({ cls: "attachmenter-modal-info" });
     const fileName = infoContainer.createDiv({ cls: "attachmenter-file-name" });
     fileName.createEl("strong", { text: t("common.file") + ": " });
-    fileName.createEl("span", { text: this.file.name });
+    fileName.createSpan({ text: this.file.name });
 
     const filePath = infoContainer.createDiv({ cls: "attachmenter-file-path" });
     filePath.createEl("strong", { text: t("common.path") + ": " });
-    filePath.createEl("span", { text: this.file.path });
+    filePath.createSpan({ text: this.file.path });
 
     // Close button
     const buttonContainer = contentEl.createDiv({ cls: "attachmenter-modal-buttons" });

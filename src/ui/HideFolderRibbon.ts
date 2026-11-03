@@ -78,7 +78,7 @@ export class HideFolderRibbon {
       this.mutationObserver = new MutationObserver((mutationRecord) => {
         // Debounce to avoid excessive updates
         if (this.refreshTimeout) {
-          clearTimeout(this.refreshTimeout);
+          window.clearTimeout(this.refreshTimeout);
         }
         this.refreshTimeout = window.setTimeout(() => {
           let shouldRefresh = false;
@@ -105,7 +105,7 @@ export class HideFolderRibbon {
             }
             // Also check added nodes for new folder elements
             record.addedNodes.forEach((node) => {
-              if (node instanceof HTMLElement) {
+              if (node.instanceOf(HTMLElement)) {
                 // Skip attachment tree elements
                 if (node.classList?.contains('attachmenter-file-attachments') ||
                   node.classList?.contains('attachmenter-attachment-file') ||
@@ -139,9 +139,9 @@ export class HideFolderRibbon {
 
       // Also refresh after delays to catch late-loaded elements
       // Obsidian's virtual scroll may load elements asynchronously
-      setTimeout(() => this.refreshFolders(), 500);
-      setTimeout(() => this.refreshFolders(), 1500);
-      setTimeout(() => this.refreshFolders(), 3000);
+      window.setTimeout(() => this.refreshFolders(), 500);
+      window.setTimeout(() => this.refreshFolders(), 1500);
+      window.setTimeout(() => this.refreshFolders(), 3000);
     });
 
     // Listen for vault changes to update section count
@@ -168,7 +168,7 @@ export class HideFolderRibbon {
 
   private initAttachmentFolderSection() {
     // Wait for file explorer to be ready
-    setTimeout(() => {
+    window.setTimeout(() => {
       this.createAttachmentFolderSection();
     }, 500);
 
@@ -194,12 +194,12 @@ export class HideFolderRibbon {
     if (!navFilesContainer) return;
 
     // Create attachment manager button section (below toggle folder section)
-    const section = document.createElement('div');
+    const section = createDiv();
     section.className = 'attachmenter-folder-section';
 
     // Create button
     // Create button
-    const button = document.createElement('div');
+    const button = createDiv();
     button.className = 'attachmenter-manager-button';
     // Inline styles removed in favor of CSS
 
@@ -208,18 +208,18 @@ export class HideFolderRibbon {
     // Hover effects handled by CSS
 
     // Icon
-    const icon = document.createElement('span');
+    const icon = createSpan();
     icon.className = 'attachmenter-manager-button-icon';
     setIcon(icon, 'folder');
     // Inline styles removed in favor of CSS
 
     // Text
-    const text = document.createElement('span');
+    const text = createSpan();
     text.textContent = t("attachmentManager.title");
     text.className = 'attachmenter-manager-button-text';
 
     // Count
-    const count = document.createElement('span');
+    const count = createSpan();
     count.className = 'attachmenter-folder-count';
     // Inline styles removed in favor of CSS
 
@@ -327,7 +327,7 @@ export class HideFolderRibbon {
         try {
           if (this.statusBarItem.parentElement) {
             this.statusBarItem.remove();
-          } else if (this.statusBarItem instanceof HTMLElement) {
+          } else if (this.statusBarItem.instanceOf(HTMLElement)) {
             this.statusBarItem.remove();
           }
         } catch (error) {
@@ -359,7 +359,7 @@ export class HideFolderRibbon {
     // Only refresh folders if explicitly requested (for hideFolder or aeroFolder changes)
     if (shouldRefreshFolders) {
       // Use a small delay to ensure settings are saved
-      setTimeout(() => {
+      window.setTimeout(() => {
         this.refreshFolders();
         // Refresh attachment manager views after folders are refreshed
         // Use plugin's unified method for consistency
@@ -374,9 +374,11 @@ export class HideFolderRibbon {
 
     try {
       // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         const filter = buildFolderRegExp(this.plugin.settings);
-        const folders = document.querySelectorAll(".nav-folder-title-content");
+        const explorer = this.plugin.app.workspace.getLeavesOfType("file-explorer")[0];
+        const explorerDoc = explorer?.view.containerEl.doc ?? activeDocument;
+        const folders = explorerDoc.querySelectorAll(".nav-folder-title-content");
 
         let hasChanges = false;
         folders.forEach((folder) => {
@@ -385,7 +387,7 @@ export class HideFolderRibbon {
           // Identify folder element first to handle recycling
           let folderElement = folder.parentElement?.parentElement;
           if (!folderElement || !folderElement.classList.contains("nav-folder")) {
-            folderElement = folder.closest(".nav-folder") as HTMLElement;
+            folderElement = folder.closest<HTMLElement>(".nav-folder");
           }
           if (!folderElement) return;
 
@@ -443,7 +445,7 @@ export class HideFolderRibbon {
         // Apply folder visibility changes immediately
         if (hasChanges) {
           // Force a synchronous reflow
-          setTimeout(() => {
+          window.setTimeout(() => {
             this.forceFileExplorerRefresh();
             this.isRefreshing = false;
           }, 10); // Minimal delay, just enough to batch DOM changes
@@ -505,13 +507,13 @@ export class HideFolderRibbon {
 
     // Restore scroll position after refresh
     if (navFilesContainer && savedScrollTop > 0) {
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         navFilesContainer.scrollTop = savedScrollTop;
       });
     }
 
     // Trigger resize event on workspace to force layout recalculation
-    requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
       try {
         this.plugin.app.workspace.trigger('resize');
         // Restore scroll position again after resize
@@ -554,7 +556,7 @@ export class HideFolderRibbon {
       this.mutationObserver.disconnect();
     }
     if (this.refreshTimeout) {
-      clearTimeout(this.refreshTimeout);
+      window.clearTimeout(this.refreshTimeout);
     }
   }
 }

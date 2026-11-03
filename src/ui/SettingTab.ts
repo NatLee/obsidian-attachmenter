@@ -233,7 +233,7 @@ export class AttachmenterSettingTab extends PluginSettingTab {
             if (value) {
               this.plugin.fileAttachmentTree.load();
               // Force refresh after loading to show attachment trees immediately
-              setTimeout(() => {
+              window.setTimeout(() => {
                 this.plugin.fileAttachmentTree.refreshAllFiles();
               }, 100);
             } else {

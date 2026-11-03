@@ -31,8 +31,6 @@ function join(...parts: string[]): string {
 }
 
 export class RenameHandler {
-  private pathResolver: PathResolver;
-
   constructor(
     private vault: Vault,
     private fileManager: FileManager,

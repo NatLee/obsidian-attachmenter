@@ -51,7 +51,7 @@ export class AttachmentFolderDeleteModal extends Modal {
 
         const pathRow = infoContainer.createDiv({ cls: "attachmenter-info-row" });
         pathRow.createEl("strong", { text: t("common.path") + ": " });
-        pathRow.createEl("span", { text: this.folder.path });
+        pathRow.createSpan({ text: this.folder.path });
 
         // Buttons
         const buttonContainer = contentEl.createDiv({

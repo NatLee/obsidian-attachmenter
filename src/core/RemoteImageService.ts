@@ -1,6 +1,6 @@
 import {
+  DataAdapter,
   FileManager,
-  FileSystemAdapter,
   Notice,
   TFile,
   TextFileView,
@@ -15,6 +15,7 @@ import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
 import { NameResolver } from "../path/NameResolver";
 import { t } from "../i18n/index";
+import { parseCanvasData, type CanvasNode } from "../lib/canvas";
 
 // Simple path utilities for browser environment
 function join(...parts: string[]): string {
@@ -37,13 +38,6 @@ const IMAGE_CONTENT_TYPES: Record<string, string> = {
   "image/webp": "webp",
 };
 
-interface CanvasNode {
-  type?: string;
-  url?: string;
-  file?: string;
-  id?: string;
-}
-
 export class RemoteImageService {
   private pathResolver: PathResolver;
   private nameResolver: NameResolver;
@@ -52,7 +46,7 @@ export class RemoteImageService {
     private vault: Vault,
     private workspace: Workspace,
     private fileManager: FileManager,
-    private adapter: FileSystemAdapter,
+    private adapter: DataAdapter,
     private settings: AttachmenterSettings
   ) {
     this.pathResolver = new PathResolver(vault, settings);
@@ -143,7 +137,7 @@ export class RemoteImageService {
       return false;
     }
 
-    let time = moment();
+    const time = moment();
     const baseName = this.nameResolver.buildBaseName(file, time);
     const imagePath = join(folderPath, baseName);
 
@@ -246,8 +240,8 @@ export class RemoteImageService {
     folderPath: string
   ): Promise<{ newContent: string; replacedCount: number }> {
     try {
-      const data = JSON.parse(content);
-      if (!Array.isArray(data.nodes)) {
+      const data = parseCanvasData(content);
+      if (!data) {
         return { newContent: content, replacedCount: 0 };
       }
 
@@ -391,12 +385,10 @@ export class RemoteImageService {
       if (existingFile instanceof TFile) {
         await this.fileManager.trashFile(existingFile);
         // Wait a bit after deletion
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => window.setTimeout(resolve, 100));
       }
 
-      // response.arrayBuffer is a Promise property in Obsidian's requestUrl response
-      // Type assertion needed due to Obsidian's type definitions
-      const arrayBuffer = await (response.arrayBuffer as Promise<ArrayBuffer>);
+      const arrayBuffer = response.arrayBuffer;
 
       const file = await this.vault.createBinary(fullPath, arrayBuffer);
 
@@ -404,7 +396,7 @@ export class RemoteImageService {
         console.warn(`createBinary returned null for ${fullPath}, waiting and retrying...`);
         // Wait longer and retry getting the file - Obsidian may need time to sync
         for (let i = 0; i < 10; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          await new Promise((resolve) => window.setTimeout(resolve, 100));
           const createdFile = this.vault.getAbstractFileByPath(fullPath);
           if (createdFile instanceof TFile) {
             return createdFile;
