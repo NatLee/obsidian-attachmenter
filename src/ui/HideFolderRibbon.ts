@@ -385,7 +385,7 @@ export class HideFolderRibbon {
           // Identify folder element first to handle recycling
           let folderElement = folder.parentElement?.parentElement;
           if (!folderElement || !folderElement.classList.contains("nav-folder")) {
-            folderElement = folder.closest(".nav-folder") as HTMLElement;
+            folderElement = folder.closest<HTMLElement>(".nav-folder");
           }
           if (!folderElement) return;
 

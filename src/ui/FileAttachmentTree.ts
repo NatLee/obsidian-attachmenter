@@ -1,4 +1,4 @@
-import { TFile, TFolder, setIcon, View, Notice, TAbstractFile } from "obsidian";
+import { App, TFile, TFolder, setIcon, View, Notice, TAbstractFile } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { PathResolver } from "../path/PathResolver";
 import { t } from "../i18n/index";
@@ -983,9 +983,9 @@ export class FileAttachmentTree {
     setIcon(openFolderBtn, 'folder-open');
     openFolderBtn.onclick = (e) => {
       e.stopPropagation();
-      // showInFolder reveals the folder in system explorer
-      // @ts-ignore
-      this.plugin.app.showInFolder(folder.path);
+      // showInFolder reveals the folder in system explorer (not in the public API typings)
+      const app = this.plugin.app as App & { showInFolder?: (path: string) => void };
+      app.showInFolder?.(folder.path);
     };
     folderTitle.appendChild(openFolderBtn);
 

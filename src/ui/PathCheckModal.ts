@@ -19,6 +19,7 @@ import {
 } from "../lib/PathValidator";
 import { NameResolver } from "../path/NameResolver";
 import { RenameImageModal } from "./RenameImageModal";
+import { parseCanvasData } from "../lib/canvas";
 import { t } from "../i18n/index";
 
 export class PathCheckModal extends Modal {
@@ -580,8 +581,8 @@ export class PathCheckModal extends Modal {
     } else if (file.extension === "canvas") {
       // Process canvas file
       try {
-        const data = JSON.parse(content);
-        if (Array.isArray(data.nodes)) {
+        const data = parseCanvasData(content);
+        if (data) {
           for (const imageLink of imageLinks) {
             if (!imageLink.resolvedPath) {
               continue;
@@ -933,8 +934,8 @@ export class PathCheckModal extends Modal {
     } else if (file.extension === "canvas") {
       // Process canvas file
       try {
-        const data = JSON.parse(content);
-        if (Array.isArray(data.nodes)) {
+        const data = parseCanvasData(content);
+        if (data) {
           for (const imageLink of imageLinks) {
             if (!imageLink.resolvedPath) {
               continue;
@@ -1033,7 +1034,7 @@ export class PathCheckModal extends Modal {
     const upLevels = noteParts.length - commonLength;
     const downParts = imageParts.slice(commonLength);
     const relativeParts = [
-      ...Array(upLevels).fill(".."),
+      ...new Array<string>(upLevels).fill(".."),
       ...downParts,
       imageName,
     ];
@@ -1286,8 +1287,8 @@ export class PathCheckModal extends Modal {
               } else if (noteFile.extension === "canvas") {
                 // For canvas files, update the JSON node
                 try {
-                  const data = JSON.parse(content);
-                  if (Array.isArray(data.nodes)) {
+                  const data = parseCanvasData(content);
+                  if (data) {
                     // Find and update the node
                     for (const node of data.nodes) {
                       if (

@@ -1,5 +1,6 @@
 import { FileManager, MetadataCache, TFile, Vault, normalizePath } from "obsidian";
 import { PathSanitizer } from "../lib/pathSanitizer";
+import { parseCanvasData } from "../lib/canvas";
 
 export class AttachmentRenameHandler {
   constructor(
@@ -121,10 +122,10 @@ export class AttachmentRenameHandler {
       } else if (file.extension === "canvas") {
         // For canvas files, we need to parse JSON and update file paths
         try {
-          const canvasData = JSON.parse(content);
-          if (canvasData.nodes) {
+          const canvasData = parseCanvasData(content);
+          if (canvasData) {
             let canvasModified = false;
-            canvasData.nodes.forEach((node: { type: string; file?: string }) => {
+            canvasData.nodes.forEach((node) => {
               if (node.type === "file" && node.file === oldFilePath) {
                 node.file = newFile.path;
                 canvasModified = true;

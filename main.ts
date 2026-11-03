@@ -17,14 +17,14 @@ import { PathResolver } from "./src/path/PathResolver";
 import { initI18n, setLanguage, t } from "./src/i18n/index";
 
 export default class AttachmenterPlugin extends Plugin {
-  settings: AttachmenterSettings;
-  remoteImageService: RemoteImageService;
-  hideFolderRibbon: HideFolderRibbon;
-  fileAttachmentTree: FileAttachmentTree;
-  pasteImageHandler: PasteImageHandler;
-  vaultAttachmentConfiguration: VaultAttachmentConfiguration;
-  fileOpenHandler: FileOpenHandler;
-  renameHandler: RenameHandler;
+  settings!: AttachmenterSettings;
+  remoteImageService!: RemoteImageService;
+  hideFolderRibbon!: HideFolderRibbon;
+  fileAttachmentTree!: FileAttachmentTree;
+  pasteImageHandler!: PasteImageHandler;
+  vaultAttachmentConfiguration!: VaultAttachmentConfiguration;
+  fileOpenHandler!: FileOpenHandler;
+  renameHandler!: RenameHandler;
 
   async onload() {
     await this.loadSettings();
@@ -153,11 +153,8 @@ export default class AttachmenterPlugin extends Plugin {
 
 
   async loadSettings() {
-    this.settings = Object.assign(
-      {},
-      DEFAULT_SETTINGS,
-      await this.loadData()
-    );
+    const saved = (await this.loadData()) as Partial<AttachmenterSettings> | null;
+    this.settings = { ...DEFAULT_SETTINGS, ...saved };
     // Update i18n language if settings changed
     if (this.settings.language) {
       setLanguage(this.settings.language);

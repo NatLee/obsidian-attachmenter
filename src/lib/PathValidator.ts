@@ -3,6 +3,7 @@ import { App, TFile, TFolder, Vault, normalizePath } from "obsidian";
 import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
 import { PathSanitizer } from "./pathSanitizer";
+import { parseCanvasData } from "./canvas";
 
 export interface ImageLink {
   match: string; // 完整的匹配字串，如 ![alt](path)
@@ -190,8 +191,8 @@ export class PathValidator {
     } else if (file.extension === "canvas") {
       // Canvas files are JSON format
       try {
-        const data = JSON.parse(content);
-        if (Array.isArray(data.nodes)) {
+        const data = parseCanvasData(content);
+        if (data) {
           for (const node of data.nodes) {
             if (node.type === "file" && node.file) {
               // Canvas file node
