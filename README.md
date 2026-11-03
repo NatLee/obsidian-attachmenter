@@ -1,3 +1,5 @@
+![Attachmenter: one attachment folder per note. A File Explorer showing the note Project A with its Project A_Attachments folder holding a pasted and a downloaded image.](./docs/cover.png)
+
 # Attachmenter (Obsidian plugin)
 
 I built Attachmenter as a “per-note first” attachment workflow for Obsidian: it creates an attachment folder per note, manages pasted images, downloads remote images (including Canvas), shows attachments inline in File Explorer, and includes tools for path check/repair and cleanup.
@@ -316,6 +318,24 @@ Finds folders whose names end with the configured suffix and are empty, and lets
 - **Obsidian settings impact (while enabled)**
   - The plugin backs up and may adjust the vault `newLinkFormat`; if it’s not `relative` or `shortest`, it temporarily sets it to `relative`
   - Restores the original value on unload
+
+---
+
+## Privacy & vault access
+
+Attachmenter runs entirely inside your vault. There is no telemetry and no account, and nothing is uploaded anywhere.
+
+**Network.** The plugin only goes online when you ask it to download remote images (command palette, right-click menu, or the attachment tree). It requests exactly the image URLs found in that note, and nothing else.
+
+**Vault-wide scans.** Most features only touch the note you are working on and its attachment folder. A few need to look across the vault; they read file and folder names (and, where noted, note contents) locally:
+
+| Feature | What it looks at | When |
+|---|---|---|
+| Check paths | every `.md` and `.canvas` file, including contents, to find image links | when you click **Check paths** |
+| Cleanup empty attachment folders | every folder name | when you click **Cleanup** |
+| Attachment Manager view | folders ending with your suffix, and the files inside | while the view is open |
+| Folder count at the top of File Explorer | every folder name | when files are added or removed |
+| Renaming an attachment (tree or manager) | every `.md` and `.canvas` file, to update links to it | when you rename |
 
 ---
 
