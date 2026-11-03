@@ -11,7 +11,6 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: ["eslint.config.js"],
         },
-        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         ...globals.browser,

@@ -2,6 +2,7 @@ import { moment, TFile } from "obsidian";
 
 import type { AttachmenterSettings } from "../model/Settings";
 import { PathSanitizer } from "../lib/pathSanitizer";
+import { now } from "../lib/time";
 
 export class NameResolver {
   constructor(private settings: AttachmenterSettings) {}
@@ -16,7 +17,7 @@ export class NameResolver {
     const fmt = this.settings.defaultNameFormat || "{notename}-{date}";
     // Sanitize the note name to handle invalid characters (e.g., #)
     const sanitizedNotename = PathSanitizer.sanitizeFileName(note.basename);
-    const ts = (time ?? moment()).format(this.settings.dateFormat || "YYYYMMDDHHmmssSSS");
+    const ts = (time ?? now()).format(this.settings.dateFormat || "YYYYMMDDHHmmssSSS");
 
     const baseName = fmt.replace("{notename}", sanitizedNotename).replace("{date}", ts);
     

@@ -6,7 +6,6 @@ import {
   TextFileView,
   Vault,
   Workspace,
-  moment,
   normalizePath,
   requestUrl,
 } from "obsidian";
@@ -15,6 +14,7 @@ import type { AttachmenterSettings } from "../model/Settings";
 import { PathResolver } from "../path/PathResolver";
 import { NameResolver } from "../path/NameResolver";
 import { t } from "../i18n/index";
+import { now } from "../lib/time";
 import { parseCanvasData, type CanvasNode } from "../lib/canvas";
 
 // Simple path utilities for browser environment
@@ -137,7 +137,7 @@ export class RemoteImageService {
       return false;
     }
 
-    const time = moment();
+    const time = now();
     const baseName = this.nameResolver.buildBaseName(file, time);
     const imagePath = join(folderPath, baseName);
 
@@ -198,7 +198,7 @@ export class RemoteImageService {
     }
 
     // Download all images
-    let time = moment();
+    let time = now();
     const replacements: Promise<string>[] = matches.map((m) => {
       time = time.add(1, "m");
       const baseName = this.nameResolver.buildBaseName(note, time);
@@ -245,7 +245,7 @@ export class RemoteImageService {
         return { newContent: content, replacedCount: 0 };
       }
 
-      let time = moment();
+      let time = now();
       const tasks: Promise<boolean>[] = [];
 
       data.nodes.forEach((node: CanvasNode) => {

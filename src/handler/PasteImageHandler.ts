@@ -8,7 +8,6 @@ import {
   TextFileView,
   Vault,
   Workspace,
-  moment,
 } from "obsidian";
 
 import type { AttachmenterSettings } from "../model/Settings";
@@ -16,6 +15,7 @@ import { PathResolver } from "../path/PathResolver";
 import { NameResolver } from "../path/NameResolver";
 import { PasteImageManagerModal } from "../ui/PasteImageManagerModal";
 import { PathSanitizer } from "../lib/pathSanitizer";
+import { now } from "../lib/time";
 
 // Simple path utilities for browser environment
 function join(...parts: string[]): string {
@@ -72,8 +72,7 @@ export class PasteImageHandler {
     }
 
     // 生成新的文件名
-    // @ts-ignore
-    const time = (window.moment && window.moment()) || moment();
+    const time = now();
     const baseName = this.nameResolver.buildBaseName(activeFile, time);
     const newPath = normalizePath(
       join(folderPath, `${baseName}.${file.extension}`)
