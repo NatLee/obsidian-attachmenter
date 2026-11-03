@@ -1,4 +1,4 @@
-import { App, TFile, TFolder, setIcon, View, Notice, TAbstractFile } from "obsidian";
+import { App, MarkdownView, TFile, TFolder, setIcon, View, Notice, TAbstractFile } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { PathResolver } from "../path/PathResolver";
 import { t } from "../i18n/index";
@@ -26,8 +26,13 @@ interface FileExplorerView extends View {
   containerEl: HTMLElement;
 }
 
+/** Pause after the last edit before a note's row is re-checked. */
+const FILE_REFRESH_DELAY_MS = 500;
+
 export class FileAttachmentTree {
   private expandedFiles: Set<string> = new Set();
+  private fileRefreshTimers: Map<string, number> = new Map();
+  private popoverRenderGen = 0;
   private fileAttachmentContainers: Map<string, HTMLElement> = new Map();
   private mutationObserver!: MutationObserver;
   private pathResolver: PathResolver;
@@ -85,13 +90,70 @@ export class FileAttachmentTree {
         }
       })
     );
+    // Re-check a note whenever its content changes, so newly added
+    // ![](http...) links or local images show up without a manual refresh.
     this.plugin.registerEvent(
       this.plugin.app.vault.on("modify", (file) => {
-        if (this.isEnabled && file instanceof TFile && this.expandedFiles.has(file.path)) {
-          this.refreshPopoverContent(file);
+        if (this.isEnabled && file instanceof TFile && file.extension === "md") {
+          this.scheduleFileRefresh(file);
         }
       })
     );
+    // "modify" only fires once Obsidian has saved to disk; editor-change
+    // covers the time in between so the tree follows what you type.
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("editor-change", (_editor, info) => {
+        const file = info.file;
+        if (this.isEnabled && file && file.extension === "md") {
+          this.scheduleFileRefresh(file);
+        }
+      })
+    );
+  }
+
+  /** Debounced per-note refresh: typing in one note never delays another. */
+  private scheduleFileRefresh(file: TFile) {
+    const pending = this.fileRefreshTimers.get(file.path);
+    if (pending) {
+      window.clearTimeout(pending);
+    }
+    this.fileRefreshTimers.set(
+      file.path,
+      window.setTimeout(() => {
+        this.fileRefreshTimers.delete(file.path);
+        void this.refreshFile(file);
+      }, FILE_REFRESH_DELAY_MS)
+    );
+  }
+
+  /** Re-evaluate one note's expand button and, if open, its popover. */
+  private async refreshFile(file: TFile) {
+    if (!this.isEnabled) return;
+    // Skip notes that were renamed or deleted while the timer was pending
+    if (this.plugin.app.vault.getAbstractFileByPath(file.path) !== file) return;
+
+    const fileEl = this.findFileElement(file);
+    const navFileEl = fileEl?.closest<HTMLElement>('.nav-file') ?? fileEl;
+    if (navFileEl) {
+      await this.processFileElement(navFileEl);
+    }
+    if (this.expandedFiles.has(file.path)) {
+      this.refreshPopoverContent(file);
+    }
+  }
+
+  /**
+   * Note content as the user currently sees it: the open editor's buffer
+   * (including unsaved edits) when the note is open, otherwise the vault cache.
+   */
+  private async readNoteContent(file: TFile): Promise<string> {
+    for (const leaf of this.plugin.app.workspace.getLeavesOfType('markdown')) {
+      const view = leaf.view;
+      if (view instanceof MarkdownView && view.file?.path === file.path) {
+        return view.getViewData();
+      }
+    }
+    return this.plugin.app.vault.cachedRead(file);
   }
 
   private handleVaultChange(file: TAbstractFile, oldPath?: string) {
@@ -130,16 +192,21 @@ export class FileAttachmentTree {
   }
 
   private debouncedRefresh() {
-    // Skip refresh if disabled or currently rendering a tree
-    if (!this.isEnabled || this.isRenderingTree) return;
+    if (!this.isEnabled) return;
 
     if (this.refreshTimeout) {
       window.clearTimeout(this.refreshTimeout);
     }
     this.refreshTimeout = window.setTimeout(() => {
-      if (this.isEnabled && !this.isRenderingTree) {
-        this.doRefreshAllFiles();
+      this.refreshTimeout = null;
+      if (!this.isEnabled) return;
+      // Busy rendering or processing: try again shortly instead of dropping
+      // the refresh, otherwise a change that lands mid-render is lost.
+      if (this.isRenderingTree || this.isProcessing) {
+        this.debouncedRefresh();
+        return;
       }
+      this.doRefreshAllFiles();
     }, 300);
   }
 
@@ -342,7 +409,7 @@ export class FileAttachmentTree {
     let hasRemoteImages = false;
     if (this.plugin.settings.showRemoteHint) {
       try {
-        const content = await this.plugin.app.vault.cachedRead(file);
+        const content = await this.readNoteContent(file);
         // Match markdown image syntax with http/https URLs: ![alt](http...)
         const remoteImageRegex = /!\[[^\]]*\]\(https?:\/\/[^)]+\)/;
         hasRemoteImages = remoteImageRegex.test(content);
@@ -558,25 +625,9 @@ export class FileAttachmentTree {
     // Create floating popover container
     const popover = createDiv();
     popover.className = 'attachmenter-file-attachments attachmenter-popover';
+    popover.dataset.renderGen = String(++this.popoverRenderGen);
 
-    // Get attachment folder
-    const attachmentFolderPath = this.pathResolver.getAttachmentFolderForNote(file);
-    const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
-
-    if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
-      // No attachment folder - but still try to render remote images if the feature is enabled
-      if (this.plugin.settings.showRemoteHint) {
-        // We need to get the note file and render remote images directly
-        await this.renderRemoteImagesOnly(file, popover);
-      } else {
-        const emptyMsg = createDiv();
-        emptyMsg.className = 'attachmenter-no-attachments';
-        emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
-        popover.appendChild(emptyMsg);
-      }
-    } else {
-      this.renderAttachmentFolder(attachmentFolder, popover);
-    }
+    await this.renderPopoverBody(file, popover);
 
     // Position the popover to the right of the file element
     const rect = fileEl.getBoundingClientRect();
@@ -688,24 +739,33 @@ export class FileAttachmentTree {
 
     };
 
-    // Clear existing content
-    existingPopover.innerHTML = '';
-
-    // Re-render attachment folder content
-    const attachmentFolderPath = this.pathResolver.getAttachmentFolderForNote(noteFile);
-    const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
-
-    if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
-      const emptyMsg = createDiv();
-      emptyMsg.className = 'attachmenter-no-attachments';
-      emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
-      existingPopover.appendChild(emptyMsg);
-    } else {
-      this.renderAttachmentFolder(attachmentFolder, existingPopover);
-    }
+    // Clear existing content and re-render it the same way it was first drawn.
+    // Bumping the generation makes any still-running async render from a
+    // previous refresh drop its result instead of appending a duplicate.
+    existingPopover.empty();
+    existingPopover.dataset.renderGen = String(++this.popoverRenderGen);
+    void this.renderPopoverBody(noteFile, existingPopover);
 
     // Restore position styles
     Object.assign(existingPopover.style, savedStyles);
+  }
+
+  /** Popover content: the attachment folder (plus remote images), or remote images only. */
+  private async renderPopoverBody(file: TFile, popover: HTMLElement) {
+    const attachmentFolderPath = this.pathResolver.getAttachmentFolderForNote(file);
+    const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
+
+    if (attachmentFolder instanceof TFolder) {
+      this.renderAttachmentFolder(attachmentFolder, popover);
+    } else if (this.plugin.settings.showRemoteHint) {
+      // No attachment folder yet, but the note may still have remote images
+      await this.renderRemoteImagesOnly(file, popover);
+    } else {
+      const emptyMsg = createDiv();
+      emptyMsg.className = 'attachmenter-no-attachments';
+      emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
+      popover.appendChild(emptyMsg);
+    }
   }
 
   private toggleAttachmentTree(file: TFile) {
@@ -1054,7 +1114,9 @@ export class FileAttachmentTree {
    */
   private async renderRemoteImagesOnly(noteFile: TFile, container: HTMLElement) {
     // Parse note content for remote images
-    const content = await this.plugin.app.vault.read(noteFile);
+    const renderGen = container.dataset.renderGen;
+    const content = await this.readNoteContent(noteFile);
+    if (container.dataset.renderGen !== renderGen) return; // superseded by a newer refresh
     const regex = /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g;
 
     const remoteImages: { alt: string, link: string }[] = [];
@@ -1175,7 +1237,9 @@ export class FileAttachmentTree {
 
   private async renderRemoteImages(noteFile: TFile, container: HTMLElement) {
     // Parse note content for remote images
-    const content = await this.plugin.app.vault.read(noteFile);
+    const renderGen = container.dataset.renderGen;
+    const content = await this.readNoteContent(noteFile);
+    if (container.dataset.renderGen !== renderGen) return; // superseded by a newer refresh
     const regex = /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g;
 
     const remoteImages: { alt: string, link: string }[] = [];
@@ -1521,6 +1585,8 @@ export class FileAttachmentTree {
     if (this.refreshTimeout) {
       window.clearTimeout(this.refreshTimeout);
     }
+    this.fileRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+    this.fileRefreshTimers.clear();
 
     // Remove all expand buttons from DOM
     const doc = this.getExplorerDocument();
