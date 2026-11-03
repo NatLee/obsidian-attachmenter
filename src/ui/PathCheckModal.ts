@@ -377,41 +377,41 @@ export class PathCheckModal extends Modal {
         cls: "attachmenter-issue-item",
       });
 
-      issueItem.createEl("div", {
+      issueItem.createDiv({
         cls: "attachmenter-issue-file",
         text: issue.file.path,
       });
 
       if (issueType === "missing") {
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.expected", { path: issue.expectedFolderPath }),
         });
       } else if (issueType === "name_mismatch") {
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.expected", { path: issue.expectedFolderPath }),
         });
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.actual", { path: issue.actualFolderPath || t("pathCheck.nA") }),
         });
       } else if (issueType === "invalid_chars") {
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.invalidCharacters", { chars: issue.invalidChars?.join(", ") || t("pathCheck.nA") }),
         });
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.noteName", { name: issue.file.basename }),
         });
       } else if (issueType === "misplaced") {
-        issueItem.createEl("div", {
+        issueItem.createDiv({
           cls: "attachmenter-issue-detail",
           text: t("pathCheck.expected", { path: issue.expectedFolderPath }),
         });
         if (issue.imageLinks) {
-          issueItem.createEl("div", {
+          issueItem.createDiv({
             cls: "attachmenter-issue-detail",
             text: `${issue.imageLinks.length} ${t("common.attachments")}`,
           });
@@ -1090,11 +1090,11 @@ export class PathCheckModal extends Modal {
         const itemEl = list.createDiv({
           cls: "attachmenter-change-plan-item",
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-file",
           text: t("pathCheck.inFile", { path: item.noteFile.path }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.toPath", { path: item.path }),
         });
@@ -1114,15 +1114,15 @@ export class PathCheckModal extends Modal {
         const itemEl = list.createDiv({
           cls: "attachmenter-change-plan-item",
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-file",
           text: t("pathCheck.inFile", { path: item.noteFile.path }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.fromPath", { path: item.from }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.toPath", { path: item.to }),
         });
@@ -1142,15 +1142,15 @@ export class PathCheckModal extends Modal {
         const itemEl = list.createDiv({
           cls: "attachmenter-change-plan-item",
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-file",
           text: t("pathCheck.inFile", { path: item.noteFile.path }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.fromPath", { path: item.fromPath }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.toPath", { path: item.toPath }),
         });
@@ -1170,15 +1170,15 @@ export class PathCheckModal extends Modal {
         const itemEl = list.createDiv({
           cls: "attachmenter-change-plan-item",
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-file",
           text: t("pathCheck.inFile", { path: item.noteFile.path }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.oldLink", { link: item.oldLink }),
         });
-        itemEl.createEl("div", {
+        itemEl.createDiv({
           cls: "attachmenter-change-plan-detail",
           text: t("pathCheck.newLink", { link: item.newLink }),
         });

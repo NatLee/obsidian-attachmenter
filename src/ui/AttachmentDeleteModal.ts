@@ -76,7 +76,7 @@ export class AttachmentDeleteModal extends Modal {
             cls: "attachmenter-file-path"
         });
         filePath.createEl("strong", { text: t("common.path") + ": " });
-        filePath.createEl("span", { text: this.file.path });
+        filePath.createSpan({ text: this.file.path });
 
         // Action buttons
         const buttonContainer = contentEl.createDiv({

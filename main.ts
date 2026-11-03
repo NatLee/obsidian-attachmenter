@@ -178,8 +178,8 @@ export default class AttachmenterPlugin extends Plugin {
       }
 
       // Use requestAnimationFrame and a delay to ensure settings are saved and DOM is ready
-      requestAnimationFrame(() => {
-        setTimeout(() => {
+      window.requestAnimationFrame(() => {
+        window.setTimeout(() => {
           leaves.forEach(leaf => {
             try {
               const view = leaf.view as AttachmentManagerView;

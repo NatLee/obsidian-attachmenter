@@ -55,7 +55,7 @@ export class AttachmentManagerView extends ItemView {
         return;
       }
       if (renderTimeout) {
-        clearTimeout(renderTimeout);
+        window.clearTimeout(renderTimeout);
       }
       renderTimeout = window.setTimeout(() => {
         if (!this.isRendering) {
@@ -121,7 +121,7 @@ export class AttachmentManagerView extends ItemView {
       };
 
       // Show count in header
-      const countSpan = header.createEl("span", {
+      const countSpan = header.createSpan({
         text: ` (${this.attachmentItems.length})`,
         cls: "attachmenter-manager-count"
       });
@@ -174,7 +174,7 @@ export class AttachmentManagerView extends ItemView {
       });
     } finally {
       // Reset rendering flag after a short delay to allow DOM to settle
-      setTimeout(() => {
+      window.setTimeout(() => {
         this.isRendering = false;
       }, 100);
     }

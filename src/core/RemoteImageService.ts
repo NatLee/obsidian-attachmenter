@@ -385,7 +385,7 @@ export class RemoteImageService {
       if (existingFile instanceof TFile) {
         await this.fileManager.trashFile(existingFile);
         // Wait a bit after deletion
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => window.setTimeout(resolve, 100));
       }
 
       const arrayBuffer = response.arrayBuffer;
@@ -396,7 +396,7 @@ export class RemoteImageService {
         console.warn(`createBinary returned null for ${fullPath}, waiting and retrying...`);
         // Wait longer and retry getting the file - Obsidian may need time to sync
         for (let i = 0; i < 10; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          await new Promise((resolve) => window.setTimeout(resolve, 100));
           const createdFile = this.vault.getAbstractFileByPath(fullPath);
           if (createdFile instanceof TFile) {
             return createdFile;

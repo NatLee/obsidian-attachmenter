@@ -52,7 +52,7 @@ export class FileAttachmentTree {
     });
 
     // Also try to initialize after a delay
-    setTimeout(() => {
+    window.setTimeout(() => {
       if (this.isEnabled) {
         this.initializeFileWatchers();
       }
@@ -134,7 +134,7 @@ export class FileAttachmentTree {
     if (!this.isEnabled || this.isRenderingTree) return;
 
     if (this.refreshTimeout) {
-      clearTimeout(this.refreshTimeout);
+      window.clearTimeout(this.refreshTimeout);
     }
     this.refreshTimeout = window.setTimeout(() => {
       if (this.isEnabled && !this.isRenderingTree) {
@@ -161,7 +161,7 @@ export class FileAttachmentTree {
 
       for (const mutation of mutations) {
         for (const node of Array.from(mutation.addedNodes)) {
-          if (!(node instanceof HTMLElement)) continue;
+          if (!node.instanceOf(HTMLElement)) continue;
 
           // Ignore any attachment tree-related elements
           if (node.classList.contains('attachmenter-file-attachments') ||
@@ -221,7 +221,7 @@ export class FileAttachmentTree {
 
     try {
       // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         const fileExplorer = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
         if (!fileExplorer?.view) {
           this.isProcessing = false;
@@ -277,7 +277,7 @@ export class FileAttachmentTree {
     }
 
     // Skip if element is not visible
-    if (fileEl.offsetParent === null && !document.body.contains(fileEl)) {
+    if (fileEl.offsetParent === null && !fileEl.isConnected) {
       return;
     }
 
@@ -399,13 +399,13 @@ export class FileAttachmentTree {
       if (this.expandedFiles.has(file.path)) {
         const existingContainer = this.fileAttachmentContainers.get(file.path);
         // Only re-render if container is completely missing or not in DOM
-        if (!existingContainer || !document.body.contains(existingContainer)) {
+        if (!existingContainer || !existingContainer.isConnected) {
           // Set rendering lock before restoring
           this.isRenderingTree = true;
           try {
             this.renderAttachmentTree(file, fileEl);
           } finally {
-            setTimeout(() => { this.isRenderingTree = false; }, 50);
+            window.setTimeout(() => { this.isRenderingTree = false; }, 50);
           }
         }
       }
@@ -427,7 +427,7 @@ export class FileAttachmentTree {
     // Inline styles removed in favor of CSS
 
     // Create expand button - styled via CSS
-    const expandButton = document.createElement('div');
+    const expandButton = createDiv();
     expandButton.className = 'attachmenter-expand-button';
     // Style properties moved to CSS (.attachmenter-expand-button)
 
@@ -533,7 +533,7 @@ export class FileAttachmentTree {
     this.expandedFiles.clear();
 
     // Force clear any stray highlights from previously expanded files (safety net)
-    const highlightedElements = document.querySelectorAll('.attachmenter-file-highlight');
+    const highlightedElements = this.getExplorerDocument().querySelectorAll('.attachmenter-file-highlight');
     highlightedElements.forEach(el => {
       el.removeClass('attachmenter-file-highlight');
       (el as HTMLElement).style.removeProperty('--attachmenter-highlight-border');
@@ -556,7 +556,7 @@ export class FileAttachmentTree {
     }
 
     // Create floating popover container
-    const popover = document.createElement('div');
+    const popover = createDiv();
     popover.className = 'attachmenter-file-attachments attachmenter-popover';
 
     // Get attachment folder
@@ -569,7 +569,7 @@ export class FileAttachmentTree {
         // We need to get the note file and render remote images directly
         await this.renderRemoteImagesOnly(file, popover);
       } else {
-        const emptyMsg = document.createElement('div');
+        const emptyMsg = createDiv();
         emptyMsg.className = 'attachmenter-no-attachments';
         emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
         popover.appendChild(emptyMsg);
@@ -624,7 +624,7 @@ export class FileAttachmentTree {
         popover.removeClass('attachmenter-popover-up');
       }
 
-      document.body.appendChild(popover);
+      fileEl.doc.body.appendChild(popover);
 
       // Horizontal adjustment if off-screen
       const popoverRect = popover.getBoundingClientRect();
@@ -654,13 +654,13 @@ export class FileAttachmentTree {
         }
 
         this.updateExpandButtonIcon(file);
-        document.removeEventListener('click', closeHandler);
+        fileEl.doc.removeEventListener('click', closeHandler);
       }
     };
 
     // Delay adding the listener to avoid immediate close
-    setTimeout(() => {
-      document.addEventListener('click', closeHandler);
+    window.setTimeout(() => {
+      fileEl.doc.addEventListener('click', closeHandler);
     }, 100);
   }
 
@@ -696,7 +696,7 @@ export class FileAttachmentTree {
     const attachmentFolder = this.plugin.app.vault.getAbstractFileByPath(attachmentFolderPath);
 
     if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
-      const emptyMsg = document.createElement('div');
+      const emptyMsg = createDiv();
       emptyMsg.className = 'attachmenter-no-attachments';
       emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
       existingPopover.appendChild(emptyMsg);
@@ -875,7 +875,7 @@ export class FileAttachmentTree {
       }
 
       // Create attachment container
-      const container = document.createElement('div');
+      const container = createDiv();
       container.className = 'attachmenter-file-attachments';
 
       // Get attachment folder
@@ -884,7 +884,7 @@ export class FileAttachmentTree {
 
       if (!attachmentFolder || !(attachmentFolder instanceof TFolder)) {
         // No attachment folder
-        const emptyMsg = document.createElement('div');
+        const emptyMsg = createDiv();
         emptyMsg.className = 'attachmenter-no-attachments';
         emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
         container.appendChild(emptyMsg);
@@ -907,7 +907,7 @@ export class FileAttachmentTree {
       this.fileAttachmentContainers.set(file.path, container);
     } finally {
       // Release rendering lock after a short delay to let DOM settle
-      setTimeout(() => {
+      window.setTimeout(() => {
         this.isRenderingTree = false;
       }, 50);
     }
@@ -920,17 +920,17 @@ export class FileAttachmentTree {
     const totalCount = files.length;
 
     // Create folder header
-    const folderHeader = document.createElement('div');
+    const folderHeader = createDiv();
     folderHeader.className = 'attachmenter-attachment-folder';
 
-    const folderTitle = document.createElement('div');
+    const folderTitle = createDiv();
     folderTitle.className = 'attachmenter-folder-header';
 
-    const folderIcon = document.createElement('span');
+    const folderIcon = createSpan();
     folderIcon.className = 'nav-folder-icon attachmenter-folder-icon';
     setIcon(folderIcon, 'folder');
 
-    const folderName = document.createElement('span');
+    const folderName = createSpan();
     folderName.className = 'attachmenter-folder-name';
     folderName.textContent = folder.name;
     // Feature: Truncate long folder names - Handled by CSS
@@ -938,7 +938,7 @@ export class FileAttachmentTree {
 
 
     // Feature 3: Delete attachment folder icon
-    const deleteFolderBtn = document.createElement('div');
+    const deleteFolderBtn = createDiv();
     deleteFolderBtn.className = 'attachmenter-folder-delete-btn';
     deleteFolderBtn.setAttribute('aria-label', t('attachmentManager.deleteFolderConfirm'));
     setIcon(deleteFolderBtn, 'trash-2');
@@ -958,7 +958,7 @@ export class FileAttachmentTree {
     };
 
     // Add count badge
-    const countBadge = document.createElement('span');
+    const countBadge = createSpan();
     countBadge.className = 'attachmenter-count-badge';
     countBadge.textContent = `${totalCount}`;
 
@@ -969,13 +969,13 @@ export class FileAttachmentTree {
     // spacer
     // Removed spacer.style.flex = '1' because folderName now flexes.
     // We just need a small gap or let folderName push everything.
-    const spacer = document.createElement('div');
+    const spacer = createDiv();
     spacer.className = 'attachmenter-spacer';
     // spacer.style.flex = '1'; // Removed
     folderTitle.appendChild(spacer);
 
     // Feature: Open in system explorer
-    const openFolderBtn = document.createElement('div');
+    const openFolderBtn = createDiv();
     openFolderBtn.className = 'attachmenter-folder-action-btn';
     // openFolderBtn.style.marginRight = '8px'; // Moved to CSS
     // openFolderBtn.style.cursor = 'pointer'; // Moved to CSS
@@ -994,11 +994,11 @@ export class FileAttachmentTree {
     folderHeader.appendChild(folderTitle);
 
     // Create files list container with max height for scroll
-    const filesList = document.createElement('div');
+    const filesList = createDiv();
     filesList.className = 'attachmenter-folder-files';
 
     if (files.length === 0) {
-      const emptyMsg = document.createElement('div');
+      const emptyMsg = createDiv();
       emptyMsg.className = 'attachmenter-empty-folder-msg';
       emptyMsg.textContent = t("fileAttachmentTree.emptyFolder");
       filesList.appendChild(emptyMsg);
@@ -1016,10 +1016,10 @@ export class FileAttachmentTree {
 
       // Add "Load More" button if there are more files
       if (remainingCount > 0) {
-        const loadMoreContainer = document.createElement('div');
+        const loadMoreContainer = createDiv();
         loadMoreContainer.className = 'attachmenter-load-more-container';
 
-        const loadMoreBtn = document.createElement('button');
+        const loadMoreBtn = createEl('button');
         loadMoreBtn.className = 'attachmenter-load-more-btn';
         loadMoreBtn.textContent = t("fileAttachmentTree.loadMore", { count: remainingCount });
         loadMoreBtn.onclick = (e) => {
@@ -1068,7 +1068,7 @@ export class FileAttachmentTree {
 
     if (remoteImages.length === 0) {
       // No remote images found either - show empty message
-      const emptyMsg = document.createElement('div');
+      const emptyMsg = createDiv();
       emptyMsg.className = 'attachmenter-no-attachments';
       emptyMsg.textContent = t("fileAttachmentTree.noAttachments");
       container.appendChild(emptyMsg);
@@ -1076,21 +1076,21 @@ export class FileAttachmentTree {
     }
 
     // Create section for remote images
-    const remoteSection = document.createElement('div');
+    const remoteSection = createDiv();
     remoteSection.className = 'attachmenter-attachment-folder attachmenter-remote-section';
 
-    const sectionHeader = document.createElement('div');
+    const sectionHeader = createDiv();
     sectionHeader.className = 'attachmenter-folder-header';
 
-    const icon = document.createElement('span');
+    const icon = createSpan();
     icon.className = 'nav-folder-icon attachmenter-folder-icon';
     setIcon(icon, 'globe');
 
-    const title = document.createElement('span');
+    const title = createSpan();
     title.className = 'attachmenter-folder-name';
     title.textContent = t("fileAttachmentTree.remoteImages");
 
-    const badge = document.createElement('span');
+    const badge = createSpan();
     badge.className = 'attachmenter-count-badge';
     badge.textContent = `${remoteImages.length}`;
 
@@ -1103,7 +1103,7 @@ export class FileAttachmentTree {
 
     remoteSection.appendChild(sectionHeader);
 
-    const listContainer = document.createElement('div');
+    const listContainer = createDiv();
     listContainer.className = 'attachmenter-folder-files';
 
     remoteImages.forEach(img => {
@@ -1120,7 +1120,7 @@ export class FileAttachmentTree {
   private renderDownloadAllButton(container: HTMLElement, images: { alt: string, link: string }[], noteFile: TFile) {
     if (!this.plugin.remoteImageService) return;
 
-    const downloadAllBtn = document.createElement('div');
+    const downloadAllBtn = createDiv();
     downloadAllBtn.className = 'attachmenter-folder-action-btn';
     downloadAllBtn.title = t("menu.downloadRemoteImages");
     setIcon(downloadAllBtn, 'download-cloud');
@@ -1190,21 +1190,21 @@ export class FileAttachmentTree {
     if (remoteImages.length === 0) return;
 
     // Create separate section for remote images
-    const remoteSection = document.createElement('div');
+    const remoteSection = createDiv();
     remoteSection.className = 'attachmenter-attachment-folder attachmenter-remote-section';
 
-    const sectionHeader = document.createElement('div');
+    const sectionHeader = createDiv();
     sectionHeader.className = 'attachmenter-folder-header';
 
-    const icon = document.createElement('span');
+    const icon = createSpan();
     icon.className = 'nav-folder-icon attachmenter-folder-icon';
     setIcon(icon, 'globe');
 
-    const title = document.createElement('span');
+    const title = createSpan();
     title.className = 'attachmenter-folder-name';
     title.textContent = t("fileAttachmentTree.remoteImages");
 
-    const badge = document.createElement('span');
+    const badge = createSpan();
     badge.className = 'attachmenter-count-badge';
     badge.textContent = `${remoteImages.length}`;
 
@@ -1217,7 +1217,7 @@ export class FileAttachmentTree {
 
     remoteSection.appendChild(sectionHeader);
 
-    const listContainer = document.createElement('div');
+    const listContainer = createDiv();
     listContainer.className = 'attachmenter-folder-files';
 
     remoteImages.forEach(img => {
@@ -1229,27 +1229,27 @@ export class FileAttachmentTree {
   }
 
   private renderRemoteImageItem(img: { alt: string, link: string }, container: HTMLElement, noteFile: TFile) {
-    const itemEl = document.createElement('div');
+    const itemEl = createDiv();
     itemEl.className = 'attachmenter-attachment-file attachmenter-remote-item';
 
     // Icon
-    const fileIcon = document.createElement('span');
+    const fileIcon = createSpan();
     fileIcon.className = 'nav-file-icon';
     setIcon(fileIcon, 'image-file'); // Generic image icon
 
     // Name (Link or Alt)
-    const fileName = document.createElement('span');
+    const fileName = createSpan();
     fileName.className = 'attachmenter-tree-file-name';
     const nameText = img.alt || img.link.split('/').pop() || 'Remote Image';
     fileName.textContent = nameText;
     fileName.title = img.link; // Tooltip shows full URL
 
     // Actions
-    const actions = document.createElement('div');
+    const actions = createDiv();
     actions.className = 'attachmenter-attachment-actions';
 
     // Preview (Open in modal)
-    const previewBtn = document.createElement('button');
+    const previewBtn = createEl('button');
     previewBtn.className = 'attachmenter-action-button';
     previewBtn.title = t("attachmentManager.preview");
     setIcon(previewBtn, 'eye');
@@ -1264,7 +1264,7 @@ export class FileAttachmentTree {
         noteFile,
         () => {
           // Delay resetting the flag to prevent the modal close click from triggering popover close
-          setTimeout(() => {
+          window.setTimeout(() => {
             this.isModalOpen = false;
           }, 200);
         }
@@ -1272,7 +1272,7 @@ export class FileAttachmentTree {
     };
 
     // Download
-    const downloadBtn = document.createElement('button');
+    const downloadBtn = createEl('button');
     downloadBtn.className = 'attachmenter-action-button';
     downloadBtn.title = t("fileAttachmentTree.download");
     setIcon(downloadBtn, 'download');
@@ -1312,7 +1312,7 @@ export class FileAttachmentTree {
   }
 
   private renderAttachmentFile(file: TFile, container: HTMLElement, noteFile: TFile | null = null) {
-    const fileEl = document.createElement('div');
+    const fileEl = createDiv();
     fileEl.className = 'attachmenter-attachment-file';
     // Inline styles removed in favor of CSS
 
@@ -1324,24 +1324,24 @@ export class FileAttachmentTree {
     };
 
     // File icon - don't shrink
-    const fileIcon = document.createElement('span');
+    const fileIcon = createSpan();
     fileIcon.className = 'nav-file-icon';
     setIcon(fileIcon, this.getFileIcon(file.extension));
     // Inline styles removed in favor of CSS
 
     // File name - with overflow handling for long names
-    const fileName = document.createElement('span');
+    const fileName = createSpan();
     fileName.className = 'attachmenter-tree-file-name';
     fileName.textContent = file.name;
     // Inline styles removed in favor of CSS
 
     // Actions container - never shrink
-    const actions = document.createElement('div');
+    const actions = createDiv();
     actions.className = 'attachmenter-attachment-actions';
     // Inline styles removed in favor of CSS
 
     // Preview button
-    const previewButton = document.createElement('button');
+    const previewButton = createEl('button');
     previewButton.className = 'attachmenter-action-button';
     previewButton.title = t("attachmentManager.preview");
     setIcon(previewButton, 'eye');
@@ -1351,7 +1351,7 @@ export class FileAttachmentTree {
     };
 
     // Rename button
-    const renameButton = document.createElement('button');
+    const renameButton = createEl('button');
     renameButton.className = 'attachmenter-action-button';
     renameButton.title = t("attachmentManager.rename");
     setIcon(renameButton, 'pencil');
@@ -1361,7 +1361,7 @@ export class FileAttachmentTree {
     };
 
     // Delete button
-    const deleteButton = document.createElement('button');
+    const deleteButton = createEl('button');
     deleteButton.className = 'attachmenter-action-button attachmenter-action-button-danger';
     deleteButton.title = t("attachmentManager.delete");
     setIcon(deleteButton, 'trash-2');
@@ -1398,7 +1398,7 @@ export class FileAttachmentTree {
     const originalOnClose = modal.onClose.bind(modal);
     modal.onClose = () => {
       // Delay resetting the flag to prevent the modal close click from triggering popover close
-      setTimeout(() => {
+      window.setTimeout(() => {
         this.isModalOpen = false;
       }, 200);
       originalOnClose();
@@ -1439,7 +1439,7 @@ export class FileAttachmentTree {
     // Reset flag when modal closes - with delay to prevent click from closing popover
     const originalOnClose = modal.onClose.bind(modal);
     modal.onClose = () => {
-      setTimeout(() => {
+      window.setTimeout(() => {
         this.isModalOpen = false;
       }, 200);
       originalOnClose();
@@ -1475,7 +1475,7 @@ export class FileAttachmentTree {
     // Reset flag when modal closes - with delay to prevent click from closing popover
     const originalOnClose = modal.onClose.bind(modal);
     modal.onClose = () => {
-      setTimeout(() => {
+      window.setTimeout(() => {
         this.isModalOpen = false;
       }, 200);
       originalOnClose();
@@ -1506,6 +1506,12 @@ export class FileAttachmentTree {
     return iconMap[extension.toLowerCase()] || 'file';
   }
 
+  /** Document hosting the file explorer (main window or a popout window). */
+  private getExplorerDocument(): Document {
+    const explorer = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
+    return explorer?.view.containerEl.doc ?? activeDocument;
+  }
+
   unload() {
     this.isEnabled = false;
 
@@ -1513,16 +1519,17 @@ export class FileAttachmentTree {
       this.mutationObserver.disconnect();
     }
     if (this.refreshTimeout) {
-      clearTimeout(this.refreshTimeout);
+      window.clearTimeout(this.refreshTimeout);
     }
 
     // Remove all expand buttons from DOM
-    document.querySelectorAll('.attachmenter-expand-button').forEach((el) => {
+    const doc = this.getExplorerDocument();
+    doc.querySelectorAll('.attachmenter-expand-button').forEach((el) => {
       el.remove();
     });
 
     // Remove all attachment containers from DOM
-    document.querySelectorAll('.attachmenter-file-attachments').forEach((el) => {
+    doc.querySelectorAll('.attachmenter-file-attachments').forEach((el) => {
       el.remove();
     });
 
