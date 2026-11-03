@@ -42,9 +42,38 @@ I wanted a single plugin that keeps attachments predictable and easy to maintain
   - Ribbon button + command palette command + optional status bar indicator
   - Optional AERO semi-transparent styling
 
+### At a glance
+
+Everything Attachmenter does starts from something you do. The flowcharts in each section below show the details.
+
+```mermaid
+flowchart LR
+    subgraph you["What you do"]
+        P["Paste an image"]
+        E["Edit a note"]
+        R["Rename or move a note"]
+        D["Ask to download remote images"]
+        T["Run Check paths or Cleanup"]
+    end
+    subgraph plugin["What Attachmenter does"]
+        P2["Moves it into the note's<br/>attachment folder and renames it"]
+        E2["Updates the attachment tree<br/>in File Explorer"]
+        R2["Renames or moves the<br/>attachment folder with it"]
+        D2["Saves the images locally<br/>and rewrites the links"]
+        T2["Fixes folders, moves misplaced images,<br/>removes empty folders"]
+    end
+    P --> P2
+    E --> E2
+    R --> R2
+    D --> D2
+    T --> T2
+```
+
 ---
 
 ## Installation
+
+> Requires Obsidian **1.8.7** or newer.
 
 1. Download `main.js`, `manifest.json`, `styles.css` from [Releases](https://github.com/natlee/obsidian-attachmenter/releases)
 2. Put them into your vault at `.obsidian/plugins/obsidian-attachmenter/`
@@ -67,6 +96,30 @@ This is how Attachmenter computes the attachment folder path in the current vers
   - Windows-forbidden characters (`< > : " / \ | ? *`) are replaced with spaces
   - Consecutive spaces are collapsed, and leading/trailing spaces/dots are trimmed
 
+With the default settings, a PNG pasted into `Notes/Project A.md` on 2026-11-03 at 14:25:30.123 ends up here:
+
+```mermaid
+flowchart LR
+    N["Notes/Project A.md"] -- "folder = note name + suffix" --> F["Notes/Project A_Attachments/"]
+    F -- "file = {notename}-{date}" --> I["Project A-20261103142530123.png"]
+```
+
+**When you rename or move a note**, the attachment folder follows it (setting: *Auto rename attachment folder*, on by default). Files inside keep their names, and Obsidian updates the links in the note.
+
+```mermaid
+flowchart LR
+    subgraph before["Before"]
+        A["Notes/Project A.md"]
+        B["Notes/Project A_Attachments/"]
+    end
+    subgraph after["After"]
+        C["Archive/Project B.md"]
+        D["Archive/Project B_Attachments/"]
+    end
+    A -- "you rename or move the note" --> C
+    B -- "Attachmenter moves the folder" --> D
+```
+
 ### 2) Paste image modal (keep / delete / change path)
 
 When you paste an image in Markdown or Canvas, Attachmenter will:
@@ -77,6 +130,21 @@ When you paste an image in Markdown or Canvas, Attachmenter will:
   - **Keep**: keep the image
   - **Delete**: delete the image file and remove its reference from the note/Canvas
   - **Change location**: manually edit the target path (free-form input)
+
+```mermaid
+flowchart TD
+    A(["You paste an image"]) --> B{"Obsidian created a<br/>'Pasted image …' file?"}
+    B -- No --> X(["Left alone"])
+    B -- Yes --> C{"Is a Markdown or<br/>Canvas note open?"}
+    C -- No --> X
+    C -- Yes --> D["Create the note's attachment folder<br/>if it doesn't exist yet"]
+    D --> E["Rename to {notename}-{date}.png<br/>and move it into the folder"]
+    E --> F["Update the link in the note or Canvas"]
+    F --> G{"Manage pasted image dialog"}
+    G -- Keep --> K(["Done"])
+    G -- Delete --> L["Image goes to the trash, link is removed,<br/>an empty folder is removed too"]
+    G -- Change location --> M["Moved to the path you type,<br/>link updated"]
+```
 
 ![paste image modal](./docs/paste-image.png)
 
@@ -90,6 +158,19 @@ In the current version, you can trigger this from:
 - **File Explorer context menu**
   - Right-click a `.md` file → `Download remote images`
   - Note: this entry only applies to `.md` (use the command palette for Canvas)
+- **Attachment tree** (see 4 below): download one image or all of them
+
+```mermaid
+flowchart TD
+    A["Command palette<br/>(Markdown or Canvas)"] --> D
+    B["Right-click a note<br/>(Markdown)"] --> D
+    C["Attachment tree<br/>(one image or Download all)"] --> D
+    D["Find remote images:<br/>![alt](https://…) links and Canvas link cards"] --> E["Download every image"]
+    E --> F{"Downloaded and<br/>recognised as an image?"}
+    F -- Yes --> G["Save into the note's attachment folder<br/>as {notename}-{date}.ext"]
+    G --> H["The link now points to the local file<br/>(alt text kept)"]
+    F -- No --> I["That link stays as it was;<br/>the other images still download"]
+```
 
 ![right click download](./docs/right-click-download.gif)
 
@@ -111,6 +192,17 @@ What you can do after expanding in the current implementation:
 - **Remote images**
   - Preview remote images
   - Download a single image or Download All (updates links in the note)
+
+The tree follows your edits. Add `![](https://…)` to a note or paste an image, and the row updates about half a second after you stop typing, even before Obsidian saves the note. An open attachment list redraws as well, so there is no refresh button to press.
+
+```mermaid
+flowchart LR
+    A["You type or paste<br/>![](https://…) or an image"] --> B["~0.5 s after<br/>you stop typing"]
+    B --> C["Attachmenter re-reads the note<br/>(unsaved text included)"]
+    C --> D{"Local attachments or<br/>remote images?"}
+    D -- Yes --> E["Button appears or its icon updates;<br/>an open list redraws"]
+    D -- No --> F["Button is removed"]
+```
 
 ![download remote images from attachment tree](./docs/download-image.gif)
 
@@ -173,6 +265,18 @@ Repair modes:
 
 - **Preview Changes**: generates a change plan without writing anything (dry-run)
 - **Execute Changes**: creates/renames folders, moves images, and updates links
+
+```mermaid
+flowchart LR
+    A["Settings → Check paths"] --> B["Scan every .md and .canvas<br/>that has image links"]
+    B --> C{"Problems found?"}
+    C -- No --> Z(["All good"])
+    C -- Yes --> D["Missing folder · Invalid characters<br/>Name mismatch · Misplaced images"]
+    D --> E["Preview Changes<br/>(nothing is written)"]
+    E --> F["Execute Changes:<br/>1. create folders<br/>2. rename folders<br/>3. move images and update links"]
+```
+
+With *Prompt to rename images* on, you are asked for a name for each image it moves.
 
 ![path checking](./docs/path-checking.gif)
 
@@ -254,6 +358,9 @@ npm run dev
 
 # Build
 npm run build
+
+# Lint (same rule set as the Obsidian plugin review)
+npm run lint
 ```
 
 ---
