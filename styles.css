@@ -1,30 +1,17 @@
-/* Hide attachment folders completely without leaving placeholders */
-.attachmenter-hidden-folder {
-  display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  min-height: 0 !important;
-  max-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  opacity: 0 !important;
-  width: 0 !important;
+/* Hide attachment folders completely without leaving placeholders.
+   display: none also hides every child, and scoping to the file explorer's
+   folder items is specific enough to win over Obsidian's own folder rules. */
+.nav-files-container .nav-folder.attachmenter-hidden-folder {
+  display: none;
 }
 
-/* Ensure all children of hidden folders are also hidden */
-.attachmenter-hidden-folder * {
-  display: none !important;
-  visibility: hidden !important;
-}
-
-.attachmenter-aero-folder {
+.nav-files-container .nav-folder.attachmenter-aero-folder {
   opacity: 0.6;
-  transition: none !important;
+  transition: none;
   /* Prevent fade animations */
 }
 
-.attachmenter-aero-folder:hover {
+.nav-files-container .nav-folder.attachmenter-aero-folder:hover {
   opacity: 1;
   transition: opacity 0.15s ease;
   /* Only animate on hover */
@@ -679,9 +666,7 @@
 
   /* Moved from inline */
   overflow-y: auto;
-  /* Moved from inline */
-  /* Moved from inline */
-  z-index: 8 !important;
+  z-index: 8;
   /* Ensure it's above file explorer but below modals (z-index ~40s) */
 }
 
@@ -814,13 +799,13 @@
 }
 
 /* Actions in tree */
-.attachmenter-attachment-actions {
-  display: flex !important;
+.attachmenter-attachment-file .attachmenter-attachment-actions {
+  display: flex;
   /* Always flex to reserve space */
   visibility: hidden;
   /* Hidden but takes space */
   opacity: 0;
-  margin-left: auto !important;
+  margin-left: auto;
   /* Force to right */
   gap: 2px;
   transition: opacity 0.2s ease, visibility 0.2s ease;
@@ -874,8 +859,8 @@
 }
 
 /* Use data attributes or specific selectors for stronger specificity if needed */
-.attachmenter-file-highlight .nav-file-title-content {
-  color: var(--text-normal) !important;
+.nav-file-title.attachmenter-file-highlight .nav-file-title-content {
+  color: var(--text-normal);
   font-weight: 500;
 }
 
@@ -893,8 +878,8 @@
 }
 
 /* Fix for popover positioning */
-.attachmenter-popover-fixed {
-  position: fixed !important;
+.attachmenter-file-attachments.attachmenter-popover-fixed {
+  position: fixed;
 }
 
 /* Folder header actions */
@@ -908,9 +893,9 @@
 }
 
 .attachmenter-folder-action-btn:hover {
-  opacity: 1 !important;
-  color: var(--interactive-accent) !important;
-  background-color: var(--background-modifier-hover) !important;
+  opacity: 1;
+  color: var(--interactive-accent);
+  background-color: var(--background-modifier-hover);
   border-radius: 4px;
 }
 
@@ -930,8 +915,8 @@
 }
 
 .attachmenter-folder-delete-btn:hover {
-  opacity: 1 !important;
-  color: var(--text-error) !important;
+  opacity: 1;
+  color: var(--text-error);
 }
 
 /* Setting Tab Styles */
@@ -945,8 +930,11 @@
   position: relative;
 }
 
-.attachmenter-input-error {
-  border-color: var(--background-modifier-error) !important;
+/* Matches Obsidian's own input:hover / input:focus specificity */
+input[type="text"].attachmenter-input-error,
+input[type="text"].attachmenter-input-error:hover,
+input[type="text"].attachmenter-input-error:focus {
+  border-color: var(--background-modifier-error);
 }
 
 .attachmenter-word-break-all {
@@ -954,9 +942,9 @@
 }
 
 /* Attachment Tree Expand Button */
-.attachmenter-nav-file-title-expanded {
-  position: relative !important;
-  padding-right: 24px !important;
+.nav-files-container .nav-file-title.attachmenter-nav-file-title-expanded {
+  position: relative;
+  padding-right: 24px;
   /* Make room for the button */
 }
 

@@ -11,7 +11,6 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: ["eslint.config.js"],
         },
-        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         ...globals.browser,
@@ -22,8 +21,6 @@ export default defineConfig([
       "obsidianmd/prefer-active-doc": "warn",
       "obsidianmd/ui/sentence-case": ["warn", { enforceCamelCaseLower: true }],
       "obsidianmd/sample-names": "off",
-      // getSettingDefinitions() only takes effect on Obsidian 1.13+, above our minAppVersion.
-      "obsidianmd/settings-tab/prefer-setting-definitions": "off",
     },
   },
   {

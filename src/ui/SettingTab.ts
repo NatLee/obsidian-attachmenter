@@ -6,6 +6,8 @@ import {
   SliderComponent,
   TextComponent,
   ColorComponent,
+  requireApiVersion,
+  type SettingDefinitionItem,
 } from "obsidian";
 import type AttachmenterPlugin from "../../main";
 import { PathCheckModal } from "./PathCheckModal";
@@ -17,6 +19,19 @@ import { DEFAULT_SETTINGS } from "../model/Settings";
 // Default date format for moment.js (not UI text)
 const DEFAULT_DATE_FORMAT = "YYYYMMDDHHmmssSSS";
 
+/** One settings row: its label and a builder that adds the controls. */
+interface SettingRow {
+  name: string;
+  desc: string;
+  build: (setting: Setting) => void;
+}
+
+/** A headed group of rows. */
+interface SettingSection {
+  heading: string;
+  rows: SettingRow[];
+}
+
 export class AttachmenterSettingTab extends PluginSettingTab {
   plugin: AttachmenterPlugin;
 
@@ -25,319 +40,414 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
+  /**
+   * Obsidian 1.13+ renders the tab from these definitions (which also makes
+   * every setting show up in the settings search). Each row reuses the same
+   * builder as display(), so both paths stay identical.
+   */
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return this.getSections().map((section) => ({
+      type: "group" as const,
+      heading: section.heading,
+      items: section.rows.map((row) => ({
+        name: row.name,
+        desc: row.desc,
+        render: (setting: Setting) => {
+          setting.setName(row.name).setDesc(row.desc);
+          row.build(setting);
+        },
+      })),
+    }));
+  }
+
+  /** Fallback renderer for Obsidian versions before 1.13. */
   display(): void {
+    this.renderLegacy();
+  }
+
+  /** Redraw the tab, e.g. after the UI language changed. */
+  private rerender() {
+    if (requireApiVersion("1.13.0")) {
+      this.update();
+    } else {
+      this.renderLegacy();
+    }
+  }
+
+  /** Imperative rendering used before Obsidian 1.13. */
+  private renderLegacy() {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl)
-      .setName(t("settings.title"))
-      .setHeading();
+    new Setting(containerEl).setName(t("settings.title")).setHeading();
 
-    // =========================================================================
-    // 0. General Settings
-    // =========================================================================
-    new Setting(containerEl).setName(t("settings.group.general")).setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.language.name"))
-      .setDesc(t("settings.language.desc"))
-      .addDropdown((dropdown) => {
-        const languages = getSupportedLanguages();
-        languages.forEach((lang) => {
-          dropdown.addOption(lang.code, lang.nativeName);
-        });
-        dropdown.setValue(this.plugin.settings.language);
-        dropdown.onChange(async (value) => {
-          this.plugin.settings.language = value as typeof this.plugin.settings.language;
-          setLanguage(value as typeof this.plugin.settings.language);
-          await this.plugin.saveSettings();
-          this.display(); // Re-render to update all text
-        });
-      });
-
-    // =========================================================================
-    // 1. Management Rules
-    // =========================================================================
-    new Setting(containerEl).setName(t("settings.group.management")).setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.folderSuffix.name"))
-      .setDesc(t("settings.folderSuffix.desc"))
-      .addText((text) =>
-        text
-          .setPlaceholder("_attachments")
-          .setValue(this.plugin.settings.defaultFolderSuffix)
-          .onChange(async (value) => {
-            this.plugin.settings.defaultFolderSuffix = value || "_attachments";
-            await this.plugin.saveSettings();
-            // Refresh attachment manager views since folder suffix affects attachment finding
-            this.plugin.refreshAttachmentManagerViews();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.attachmentNameFormat.name"))
-      .setDesc(t("settings.attachmentNameFormat.desc"))
-      .addText((text) =>
-        text
-          .setPlaceholder("{notename}-{date}")
-          .setValue(this.plugin.settings.defaultNameFormat)
-          .onChange(async (value) => {
-            this.plugin.settings.defaultNameFormat =
-              value || "{notename}-{date}";
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.dateFormat.name"))
-      .setDesc(t("settings.dateFormat.desc"))
-      .addMomentFormat((component: MomentFormatComponent) => {
-        component
-          .setPlaceholder(DEFAULT_DATE_FORMAT)
-          .setValue(this.plugin.settings.dateFormat)
-          .onChange(async (value) => {
-            this.plugin.settings.dateFormat =
-              value || DEFAULT_DATE_FORMAT;
-            await this.plugin.saveSettings();
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t("settings.autoRenameAttachmentFolder.name"))
-      .setDesc(t("settings.autoRenameAttachmentFolder.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.autoRenameFolder)
-          .onChange(async (value) => {
-            this.plugin.settings.autoRenameFolder = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.renameConfirmation.name"))
-      .setDesc(t("settings.renameConfirmation.desc"))
-      .addDropdown((dropdown) => {
-        dropdown
-          .addOption("ask", t("settings.renameConfirmation.ask"))
-          .addOption("always-rename", t("settings.renameConfirmation.alwaysRename"))
-          .setValue(this.plugin.settings.renameConfirmationBehavior)
-          .onChange(async (value) => {
-            this.plugin.settings.renameConfirmationBehavior = value as 'ask' | 'always-rename';
-            await this.plugin.saveSettings();
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t("settings.promptRenameImage.name"))
-      .setDesc(t("settings.promptRenameImage.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.promptRenameImage)
-          .onChange(async (value) => {
-            this.plugin.settings.promptRenameImage = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    // =========================================================================
-    // 2. Interface Integration
-    // =========================================================================
-    new Setting(containerEl).setName(t("settings.group.appearance")).setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.showRibbonIcon.name"))
-      .setDesc(t("settings.showRibbonIcon.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showRibbonIcon)
-          .onChange(async (value) => {
-            this.plugin.settings.showRibbonIcon = value;
-            await this.plugin.saveSettings();
-            // Refresh to update ribbon icon visibility and sync with hideFolder state
-            this.plugin.hideFolderRibbon.refresh(false);
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.showStatusBar.name"))
-      .setDesc(t("settings.showStatusBar.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showStatusBar)
-          .onChange(async (value) => {
-            this.plugin.settings.showStatusBar = value;
-            await this.plugin.saveSettings();
-            // Refresh to update status bar visibility and sync with hideFolder state
-            this.plugin.hideFolderRibbon.refresh(false);
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.showAttachmentManagerButton.name"))
-      .setDesc(t("settings.showAttachmentManagerButton.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showAttachmentManagerButton)
-          .onChange(async (value) => {
-            this.plugin.settings.showAttachmentManagerButton = value;
-            await this.plugin.saveSettings();
-            // Refresh to update attachment manager button visibility
-            this.plugin.hideFolderRibbon.refresh(false);
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.hideFolder.name"))
-      .setDesc(t("settings.hideFolder.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.hideFolder)
-          .onChange(async (value) => {
-            this.plugin.settings.hideFolder = value;
-            await this.plugin.saveSettings();
-            // Refresh with folder refresh to update visibility
-            this.plugin.hideFolderRibbon.refresh(true);
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.aeroFolder.name"))
-      .setDesc(t("settings.aeroFolder.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.aeroFolder)
-          .onChange(async (value) => {
-            this.plugin.settings.aeroFolder = value;
-            await this.plugin.saveSettings();
-            // Refresh with folder refresh to update styling
-            this.plugin.hideFolderRibbon.refresh(true);
-          })
-      );
-
-    // =========================================================================
-    // 3. Attachment Tree View
-    // =========================================================================
-    new Setting(containerEl).setName(t("settings.group.view")).setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.showFileAttachmentTree.name"))
-      .setDesc(t("settings.showFileAttachmentTree.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showFileAttachmentTree)
-          .onChange(async (value) => {
-            this.plugin.settings.showFileAttachmentTree = value;
-            await this.plugin.saveSettings();
-            if (value) {
-              this.plugin.fileAttachmentTree.load();
-              // Force refresh after loading to show attachment trees immediately
-              window.setTimeout(() => {
-                this.plugin.fileAttachmentTree.refreshAllFiles();
-              }, 100);
-            } else {
-              this.plugin.fileAttachmentTree.unload();
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.showRemoteHint.name"))
-      .setDesc(t("settings.showRemoteHint.desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showRemoteHint)
-          .onChange(async (value) => {
-            this.plugin.settings.showRemoteHint = value;
-            await this.plugin.saveSettings();
-            // Refresh tree to show/hide icons
-            if (this.plugin.settings.showFileAttachmentTree) {
-              this.plugin.fileAttachmentTree.refreshAllFiles();
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.highlight.enable"))
-      .setDesc(t("settings.highlight.enableDesc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enableHighlight)
-          .onChange(async (value) => {
-            this.plugin.settings.enableHighlight = value;
-            await this.plugin.saveSettings();
-            // Refresh tree to apply styles
-            this.plugin.fileAttachmentTree.refreshHighlightStyles();
-          })
-      );
-
-    this.addColorSetting(
-      containerEl,
-      t("settings.highlight.borderColor"),
-      t("settings.highlight.borderColorDesc"),
-      this.plugin.settings.highlightBorderColor,
-      DEFAULT_SETTINGS.highlightBorderColor,
-      async (value) => {
-        this.plugin.settings.highlightBorderColor = value;
-        await this.plugin.saveSettings();
-        this.plugin.fileAttachmentTree.refreshHighlightStyles();
+    for (const section of this.getSections()) {
+      new Setting(containerEl).setName(section.heading).setHeading();
+      for (const row of section.rows) {
+        row.build(new Setting(containerEl).setName(row.name).setDesc(row.desc));
       }
-    );
+    }
+  }
 
-    // =========================================================================
-    // 4. Tools & Maintenance
-    // =========================================================================
-    new Setting(containerEl).setName(t("settings.group.tools")).setHeading();
+  private getSections(): SettingSection[] {
+    const { settings } = this.plugin;
 
-    new Setting(containerEl)
-      .setName(t("settings.checkPaths.name"))
-      .setDesc(t("settings.checkPaths.desc"))
-      .addButton((button) =>
-        button
-          .setButtonText(t("settings.checkPaths.button"))
-          .setCta()
-          .onClick(() => {
-            const modal = new PathCheckModal(
-              this.app,
-              this.app.vault,
-              this.app.fileManager,
-              this.plugin.settings
-            );
-            modal.open();
-          })
-      );
+    return [
+      // =====================================================================
+      // 0. General Settings
+      // =====================================================================
+      {
+        heading: t("settings.group.general"),
+        rows: [
+          {
+            name: t("settings.language.name"),
+            desc: t("settings.language.desc"),
+            build: (setting) => {
+              setting.addDropdown((dropdown) => {
+                getSupportedLanguages().forEach((lang) => {
+                  dropdown.addOption(lang.code, lang.nativeName);
+                });
+                dropdown.setValue(settings.language);
+                dropdown.onChange(async (value) => {
+                  settings.language = value as typeof settings.language;
+                  setLanguage(value as typeof settings.language);
+                  await this.plugin.saveSettings();
+                  this.rerender(); // Re-render to update all text
+                });
+              });
+            },
+          },
+        ],
+      },
 
-    new Setting(containerEl)
-      .setName(t("settings.cleanup.name"))
-      .setDesc(t("settings.cleanup.desc"))
-      .addButton((button) =>
-        button
-          .setButtonText(t("settings.cleanup.button"))
-          .onClick(() => {
-            const handler = new CleanupHandler(this.app, this.plugin);
-            handler.checkEmptyFolders();
-          })
-      );
+      // =====================================================================
+      // 1. Management Rules
+      // =====================================================================
+      {
+        heading: t("settings.group.management"),
+        rows: [
+          {
+            name: t("settings.folderSuffix.name"),
+            desc: t("settings.folderSuffix.desc"),
+            build: (setting) => {
+              setting.addText((text) =>
+                text
+                  .setPlaceholder("_attachments")
+                  .setValue(settings.defaultFolderSuffix)
+                  .onChange(async (value) => {
+                    settings.defaultFolderSuffix = value || "_attachments";
+                    await this.plugin.saveSettings();
+                    // Refresh attachment manager views since folder suffix affects attachment finding
+                    this.plugin.refreshAttachmentManagerViews();
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.attachmentNameFormat.name"),
+            desc: t("settings.attachmentNameFormat.desc"),
+            build: (setting) => {
+              setting.addText((text) =>
+                text
+                  .setPlaceholder("{notename}-{date}")
+                  .setValue(settings.defaultNameFormat)
+                  .onChange(async (value) => {
+                    settings.defaultNameFormat = value || "{notename}-{date}";
+                    await this.plugin.saveSettings();
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.dateFormat.name"),
+            desc: t("settings.dateFormat.desc"),
+            build: (setting) => {
+              setting.addMomentFormat((component: MomentFormatComponent) => {
+                component
+                  .setPlaceholder(DEFAULT_DATE_FORMAT)
+                  .setValue(settings.dateFormat)
+                  .onChange(async (value) => {
+                    settings.dateFormat = value || DEFAULT_DATE_FORMAT;
+                    await this.plugin.saveSettings();
+                  });
+              });
+            },
+          },
+          {
+            name: t("settings.autoRenameAttachmentFolder.name"),
+            desc: t("settings.autoRenameAttachmentFolder.desc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.autoRenameFolder)
+                  .onChange(async (value) => {
+                    settings.autoRenameFolder = value;
+                    await this.plugin.saveSettings();
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.renameConfirmation.name"),
+            desc: t("settings.renameConfirmation.desc"),
+            build: (setting) => {
+              setting.addDropdown((dropdown) => {
+                dropdown
+                  .addOption("ask", t("settings.renameConfirmation.ask"))
+                  .addOption("always-rename", t("settings.renameConfirmation.alwaysRename"))
+                  .setValue(settings.renameConfirmationBehavior)
+                  .onChange(async (value) => {
+                    settings.renameConfirmationBehavior = value as "ask" | "always-rename";
+                    await this.plugin.saveSettings();
+                  });
+              });
+            },
+          },
+          {
+            name: t("settings.promptRenameImage.name"),
+            desc: t("settings.promptRenameImage.desc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.promptRenameImage)
+                  .onChange(async (value) => {
+                    settings.promptRenameImage = value;
+                    await this.plugin.saveSettings();
+                  })
+              );
+            },
+          },
+        ],
+      },
+
+      // =====================================================================
+      // 2. Interface Integration
+      // =====================================================================
+      {
+        heading: t("settings.group.appearance"),
+        rows: [
+          {
+            name: t("settings.showRibbonIcon.name"),
+            desc: t("settings.showRibbonIcon.desc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.showRibbonIcon)
+                  .onChange(async (value) => {
+                    settings.showRibbonIcon = value;
+                    await this.plugin.saveSettings();
+                    // Refresh to update ribbon icon visibility and sync with hideFolder state
+                    this.plugin.hideFolderRibbon.refresh(false);
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.showStatusBar.name"),
+            desc: t("settings.showStatusBar.desc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.showStatusBar)
+                  .onChange(async (value) => {
+                    settings.showStatusBar = value;
+                    await this.plugin.saveSettings();
+                    // Refresh to update status bar visibility and sync with hideFolder state
+                    this.plugin.hideFolderRibbon.refresh(false);
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.showAttachmentManagerButton.name"),
+            desc: t("settings.showAttachmentManagerButton.desc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.showAttachmentManagerButton)
+                  .onChange(async (value) => {
+                    settings.showAttachmentManagerButton = value;
+                    await this.plugin.saveSettings();
+                    // Refresh to update attachment manager button visibility
+                    this.plugin.hideFolderRibbon.refresh(false);
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.hideFolder.name"),
+            desc: t("settings.hideFolder.desc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.hideFolder)
+                  .onChange(async (value) => {
+                    settings.hideFolder = value;
+                    await this.plugin.saveSettings();
+                    // Refresh with folder refresh to update visibility
+                    this.plugin.hideFolderRibbon.refresh(true);
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.aeroFolder.name"),
+            desc: t("settings.aeroFolder.desc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.aeroFolder)
+                  .onChange(async (value) => {
+                    settings.aeroFolder = value;
+                    await this.plugin.saveSettings();
+                    // Refresh with folder refresh to update styling
+                    this.plugin.hideFolderRibbon.refresh(true);
+                  })
+              );
+            },
+          },
+        ],
+      },
+
+      // =====================================================================
+      // 3. Attachment Tree View
+      // =====================================================================
+      {
+        heading: t("settings.group.view"),
+        rows: [
+          {
+            name: t("settings.showFileAttachmentTree.name"),
+            desc: t("settings.showFileAttachmentTree.desc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.showFileAttachmentTree)
+                  .onChange(async (value) => {
+                    settings.showFileAttachmentTree = value;
+                    await this.plugin.saveSettings();
+                    if (value) {
+                      this.plugin.fileAttachmentTree.load();
+                      // Force refresh after loading to show attachment trees immediately
+                      window.setTimeout(() => {
+                        this.plugin.fileAttachmentTree.refreshAllFiles();
+                      }, 100);
+                    } else {
+                      this.plugin.fileAttachmentTree.unload();
+                    }
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.showRemoteHint.name"),
+            desc: t("settings.showRemoteHint.desc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.showRemoteHint)
+                  .onChange(async (value) => {
+                    settings.showRemoteHint = value;
+                    await this.plugin.saveSettings();
+                    // Refresh tree to show/hide icons
+                    if (settings.showFileAttachmentTree) {
+                      this.plugin.fileAttachmentTree.refreshAllFiles();
+                    }
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.highlight.enable"),
+            desc: t("settings.highlight.enableDesc"),
+            build: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(settings.enableHighlight)
+                  .onChange(async (value) => {
+                    settings.enableHighlight = value;
+                    await this.plugin.saveSettings();
+                    // Refresh tree to apply styles
+                    this.plugin.fileAttachmentTree.refreshHighlightStyles();
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.highlight.borderColor"),
+            desc: t("settings.highlight.borderColorDesc"),
+            build: (setting) => {
+              this.buildColorSetting(
+                setting,
+                settings.highlightBorderColor,
+                DEFAULT_SETTINGS.highlightBorderColor,
+                async (value) => {
+                  settings.highlightBorderColor = value;
+                  await this.plugin.saveSettings();
+                  this.plugin.fileAttachmentTree.refreshHighlightStyles();
+                }
+              );
+            },
+          },
+        ],
+      },
+
+      // =====================================================================
+      // 4. Tools & Maintenance
+      // =====================================================================
+      {
+        heading: t("settings.group.tools"),
+        rows: [
+          {
+            name: t("settings.checkPaths.name"),
+            desc: t("settings.checkPaths.desc"),
+            build: (setting) => {
+              setting.addButton((button) =>
+                button
+                  .setButtonText(t("settings.checkPaths.button"))
+                  .setCta()
+                  .onClick(() => {
+                    const modal = new PathCheckModal(
+                      this.app,
+                      this.app.vault,
+                      this.app.fileManager,
+                      settings
+                    );
+                    modal.open();
+                  })
+              );
+            },
+          },
+          {
+            name: t("settings.cleanup.name"),
+            desc: t("settings.cleanup.desc"),
+            build: (setting) => {
+              setting.addButton((button) =>
+                button
+                  .setButtonText(t("settings.cleanup.button"))
+                  .onClick(() => {
+                    const handler = new CleanupHandler(this.app, this.plugin);
+                    handler.checkEmptyFolders();
+                  })
+              );
+            },
+          },
+        ],
+      },
+    ];
   }
 
   /**
-   * Helper to add a color setting with a text input and color picker
+   * Adds a color text input, color picker, opacity slider and reset button
+   * to an existing setting row.
    */
-  private addColorSetting(
-    containerEl: HTMLElement,
-    name: string,
-    desc: string,
+  private buildColorSetting(
+    setting: Setting,
     initialValue: string,
     defaultValue: string,
     onSave: (value: string) => Promise<void>
   ) {
     let textComponent: TextComponent | null = null;
     let pickerComponent: ColorComponent | null = null;
-
-    const setting = new Setting(containerEl)
-      .setName(name)
-      .setDesc(desc);
 
     // Create a container for the preview that will act as the anchor
     const previewContainer = setting.controlEl.createDiv({ cls: 'attachmenter-color-preview-container' });
@@ -377,13 +487,8 @@ export class AttachmenterSettingTab extends PluginSettingTab {
 
     const alphaLabel = sliderContainer.createDiv({ text: '100%' });
     alphaLabel.addClass('attachmenter-alpha-label');
-    // alphaLabel.style.fontSize = '0.8 em';
-    // alphaLabel.style.minWidth = '35px';
-    // alphaLabel.style.textAlign = 'right';
 
-    // We need to define updateSliderFromColor before creating the slider so we can use it, 
-    // but the slider needs to be created first.
-    // So we define the variable first.
+    // The slider is created below; declare it first so updateSliderFromColor can use it.
     let slider: SliderComponent | null = null;
 
     // Helper to update slider UI from color string
@@ -480,9 +585,9 @@ export class AttachmenterSettingTab extends PluginSettingTab {
 
             await onSave(defaultValue);
 
-            // Only update picker if it's a valid hex. 
+            // Only update picker if it's a valid hex.
             // If it's empty (theme default), we DO NOT touch the picker.
-            // Touching the picker when it doesn't match the new value might trigger onChange 
+            // Touching the picker when it doesn't match the new value might trigger onChange
             // and overwrite our just-set default value.
             if (defaultValue.startsWith("#") && pickerComponent) {
               pickerComponent.setValue(defaultValue);
@@ -496,7 +601,6 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     // Move the default color picker input INSIDE the preview element to anchor the popup correctly
     const colorInput = setting.controlEl.querySelector('input[type="color"]') as HTMLElement;
     if (colorInput) {
-      // Move input to be a child of previewEl (or container)
       previewEl.appendChild(colorInput);
 
       Object.assign(colorInput.style, {
@@ -514,7 +618,6 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       });
 
       previewEl.addClass('attachmenter-color-preview-wrapper');
-      // previewEl.style.position = 'relative';
     }
 
     if (setting.controlEl.firstChild !== previewContainer) {
@@ -549,7 +652,6 @@ export class AttachmenterSettingTab extends PluginSettingTab {
     // var(...) not supported
     if (color.startsWith('var(')) return null;
 
-    // Attempt to use DOM to compute? Too heavy. 
     // Assume basic names like "red" are 100%.
     if (color.match(/^[a-z]+$/i)) return 1;
 
@@ -558,10 +660,10 @@ export class AttachmenterSettingTab extends PluginSettingTab {
 
   // Apply new alpha to color
   private applyOpacity(color: string, alpha: number): string | null {
-    if (!color) return `rgba(0, 0, 0, ${alpha})`; // Fallback? 
+    if (!color) return `rgba(0, 0, 0, ${alpha})`;
     color = color.trim().toLowerCase();
 
-    // Normalize alpha to max 2 decimals?
+    // Normalize alpha to max 2 decimals
     alpha = Math.round(alpha * 100) / 100;
 
     if (color.startsWith('rgba')) {
@@ -591,8 +693,6 @@ export class AttachmenterSettingTab extends PluginSettingTab {
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
-    // Handle named colors by creating a temp element?
-    // Or just map common ones? 
     // Safe fallback: don't modify if we can't parse.
     return null;
   }

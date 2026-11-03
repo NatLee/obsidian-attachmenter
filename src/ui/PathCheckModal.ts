@@ -2,7 +2,6 @@ import {
   App,
   FileManager,
   Modal,
-  moment,
   Notice,
   TFile,
   TFolder,
@@ -20,6 +19,7 @@ import {
 import { NameResolver } from "../path/NameResolver";
 import { RenameImageModal } from "./RenameImageModal";
 import { parseCanvasData } from "../lib/canvas";
+import { now } from "../lib/time";
 import { t } from "../i18n/index";
 
 export class PathCheckModal extends Modal {
@@ -509,7 +509,7 @@ export class PathCheckModal extends Modal {
         }
 
         // Generate default name using NameResolver
-        const defaultBaseName = this.nameResolver.buildBaseName(file, moment());
+        const defaultBaseName = this.nameResolver.buildBaseName(file, now());
 
         // Determine the final name based on settings
         let finalBaseName: string;
@@ -608,7 +608,7 @@ export class PathCheckModal extends Modal {
             // Generate default name using NameResolver
             const defaultBaseName = this.nameResolver.buildBaseName(
               file,
-              moment()
+              now()
             );
 
             // Determine the final name based on settings
@@ -875,7 +875,7 @@ export class PathCheckModal extends Modal {
         }
 
         // Generate default name using NameResolver
-        const defaultBaseName = this.nameResolver.buildBaseName(file, moment());
+        const defaultBaseName = this.nameResolver.buildBaseName(file, now());
 
         // For dry-run, we use default name (can't prompt user)
         // In actual execution, this would prompt if settings.promptRenameImage is true
@@ -961,7 +961,7 @@ export class PathCheckModal extends Modal {
             // Generate default name using NameResolver
             const defaultBaseName = this.nameResolver.buildBaseName(
               file,
-              moment()
+              now()
             );
 
             // For dry-run, use default name
